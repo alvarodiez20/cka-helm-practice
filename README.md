@@ -45,16 +45,23 @@ exam           # las 13 preguntas con sus puntos
 q 4            # leer una pregunta
 grade          # corregir todo -> nota sobre 100
 grade 4        # corregir solo una
-solve 4        # solución (solo cuando te rindas)
+explain 4      # resolución paso a paso, con el razonamiento
+solve 4        # solo los comandos, sin explicación
+examhelp       # ayuda completa
 examreset      # volver a sembrar el entorno desde cero
 ```
 
-`q`, `grade` y `solve` autocompletan el número de pregunta con Tab. Son
-funciones de shell, no un REPL: sigues teniendo `kubectl` y `helm` a mano, que
-es donde se resuelve el examen de verdad.
+`q`, `grade`, `explain` y `solve` autocompletan el número de pregunta con Tab.
+Son funciones de shell, no un REPL: sigues teniendo `kubectl` y `helm` a mano,
+que es donde se resuelve el examen de verdad.
 
 Si prefieres no tocar tu shell, todo funciona igual llamando al script:
-`./exam.sh`, `./exam.sh q 4`, `./exam.sh grade`, `./exam.sh reset`.
+`./exam.sh`, `./exam.sh q 4`, `./exam.sh explain 4`, `./exam.sh help`.
+
+**Los enunciados están en inglés**, como en el examen real. `explain N` da la
+resolución comentada: qué inspeccionar antes de tocar nada, qué hace cada flag
+y en qué fallan la mayoría. `solve N` es solo el comando, para cuando ya sabes
+lo que haces y se te ha ido el nombre exacto de la opción.
 
 La sesión de Killercoda caduca en ~1 hora. Al volver, `./setup.sh` otra vez.
 

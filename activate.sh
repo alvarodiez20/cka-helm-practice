@@ -7,8 +7,8 @@
 #    source ~/cka-helm-practice/activate.sh
 #
 #  A partir de ahi:
-#    exam        q 4        grade       grade 4
-#                solve 4    examreset
+#    exam        q 4          grade      grade 4
+#    examhelp    explain 4    solve 4    examreset
 # ============================================================
 
 # Este fichero hay que 'source'arlo, no ejecutarlo: si lo ejecutas, las
@@ -28,13 +28,15 @@ exam()      { "$EXAM_HOME/exam.sh" "$@"; }
 q()         { "$EXAM_HOME/exam.sh" q "$@"; }
 grade()     { "$EXAM_HOME/exam.sh" grade "$@"; }
 solve()     { "$EXAM_HOME/exam.sh" solve "$@"; }
+explain()   { "$EXAM_HOME/exam.sh" explain "$@"; }
+examhelp()  { "$EXAM_HOME/exam.sh" help; }
 examreset() { "$EXAM_HOME/setup.sh"; }
 
-# Tab-completion: numeros de pregunta para q / grade / solve.
+# Tab-completion: numeros de pregunta.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     COMPREPLY=( $(compgen -W "$(seq 1 13)" -- "$cur") )
   }
-  complete -F _exam_qnums q grade solve
+  complete -F _exam_qnums q grade solve explain
 fi
