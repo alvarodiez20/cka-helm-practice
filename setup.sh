@@ -147,7 +147,9 @@ ok "release 'ghost' sembrada en un namespace que tendras que encontrar"
 
 mkdir -p "$BASE/answers"
 echo
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 printf "%s  Listo.%s Ahora:\n\n" "$G$BO" "$N"
+printf "    cd %s\n" "$HERE"
 printf "    ./exam.sh          %s# ver las 13 preguntas%s\n" "$D" "$N"
 printf "    ./exam.sh q 1      %s# leer una pregunta%s\n" "$D" "$N"
 printf "    ./exam.sh grade    %s# corregir y ver tu nota sobre 100%s\n\n" "$D" "$N"
