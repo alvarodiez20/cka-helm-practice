@@ -1,4 +1,16 @@
 answers/
+answers2/
+answers3/
 dist/
 *.tgz
 cka-helm/
+cka-helm2/
+exam3/
+
+# Recording scratch files. The finished .cast/.gif/.svg in demo/out are
+# committed on purpose — the README links to them.
+demo/out/.player.sh
+demo/out/.script.txt
+
+# Local editor/agent settings, not project config.
+.claude/

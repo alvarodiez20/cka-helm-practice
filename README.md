@@ -2,12 +2,12 @@
 
 # cka-helm-practice
 
-**Two hands-on Helm exams for the CKA. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
+**Three hands-on Helm exams for the CKA. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Tasks](https://img.shields.io/badge/tasks-26-orange?style=flat-square)](#the-two-exams)
-[![Points](https://img.shields.io/badge/points-200-orange?style=flat-square)](#scoring)
+[![Tasks](https://img.shields.io/badge/tasks-39-orange?style=flat-square)](#the-three-exams)
+[![Points](https://img.shields.io/badge/points-300-orange?style=flat-square)](#scoring)
 [![Pass mark](https://img.shields.io/badge/pass%20mark-66-brightgreen?style=flat-square)](#scoring)
 
 [![Helm](https://img.shields.io/badge/Helm-3.x%20%7C%204.x-0F1689?style=flat-square&logo=helm&logoColor=white)](https://helm.sh)
@@ -19,7 +19,15 @@
 [![Last commit](https://img.shields.io/github/last-commit/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice/commits/main)
 [![Repo size](https://img.shields.io/github/repo-size/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice)
 
-[Quick start](#quick-start) · [Commands](#commands) · [The two exams](#the-two-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
+[Quick start](#quick-start) · [Commands](#commands) · [The three exams](#the-three-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
+
+<!-- TODO: uncomment once you have run ./demo/record-demo.sh on a cluster host.
+     Left commented so the README does not show a broken image before then.
+     Prefer the .svg if you rendered one — ~10x smaller and stays sharp.
+     See demo/README.md.
+
+![Grading a rollback against a live cluster](demo/out/cka-helm-practice-exam1.gif)
+-->
 
 </div>
 
@@ -43,10 +51,11 @@ Open the [Killercoda CKA playground](https://killercoda.com/playgrounds/scenario
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 ```
 
-That downloads both exams and seeds exam 1. To seed exam 2 instead:
+That downloads all three exams and seeds exam 1. To seed a different one:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=2 bash
+curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=3 bash
 ```
 
 Or clone it:
@@ -67,28 +76,32 @@ source ~/cka-helm-practice/activate.sh
 
 From any directory, once `activate.sh` is loaded:
 
-| Exam 1 | Exam 2 | What it does |
-|---|---|---|
-| `exam` | `exam2` | list every task with points and ✔/✘ status |
-| `q N` | `q2 N` | show task N |
-| `grade` | `grade2` | grade everything, print the score out of 100 |
-| `grade N` | `grade2 N` | grade one task |
-| `explain N` | `explain2 N` | step-by-step walkthrough, with the reasoning |
-| `solve N` | `solve2 N` | just the commands, no explanation |
-| `examhelp` | `exam2help` | full usage, including task ordering |
-| `examreset` | `exam2reset` | re-seed that exam from scratch |
+| Exam 1 | Exam 2 | Exam 3 | What it does |
+|---|---|---|---|
+| `exam` | `exam2` | `exam3` | list every task with points and ✔/✘ status |
+| `q N` | `q2 N` | `q3 N` | show task N |
+| `grade` | `grade2` | `grade3` | grade everything, print the score out of 100 |
+| `grade N` | `grade2 N` | `grade3 N` | grade one task |
+| `explain N` | `explain2 N` | `explain3 N` | step-by-step walkthrough, with the reasoning |
+| `solve N` | `solve2 N` | `solve3 N` | just the commands, no explanation |
+| `examhelp` | `exam2help` | `exam3help` | full usage, including task ordering |
+| `examreset` | `exam2reset` | `exam3reset` | re-seed that exam from scratch |
 
 `q`, `grade`, `explain` and `solve` complete task numbers with **Tab**.
 
 These are shell functions, not a REPL: `kubectl` and `helm` stay in the
 foreground, which is where the exam is actually solved. If you would rather not
 touch your shell, everything works through the scripts directly — `./exam.sh`,
-`./exam.sh q 4`, `./exam2.sh explain 8`, `./exam.sh help`.
+`./exam.sh q 4`, `./exam2.sh explain 8`, `./exam3.sh help`.
 
-## The two exams
+## The three exams
 
-They are independent, cover different ground, and can both be active on the same
-cluster at once — separate chart repos, namespaces and answer directories.
+They are independent, cover different ground, and can all be active on the same
+cluster at once — separate chart sources, namespaces and answer directories.
+
+Exams 1 and 2 serve their charts from `localhost` and work with no internet.
+Exam 3 deliberately does not: it uses the real public charts the current CKA
+asks about, so it needs egress.
 
 ### Exam 1 — the core workflow
 
@@ -130,10 +143,54 @@ Seeded by `setup2.sh`.
 | 12 | 9 | Set a subchart's value from the parent | `--set <subchart>.<key>` |
 | 13 | 7 | Purge a release, history included | plain `helm uninstall` |
 
-**Order matters** in exam 2: task 1 registers the repo that tasks 2, 3, 5, 8 and
-10 install from, and task 13 destroys what task 11 asks you to find. `exam2help`
-spells out the dependencies. Exam 1 has one such pair: read task 8 before you
-run task 7.
+### Exam 3 — real charts, CRDs and OCI registries
+
+Seeded by `setup3.sh`. **Needs internet access.** Nothing is pre-configured:
+registering the repositories is part of the exam, as it is in the real one.
+
+| # | Pts | Task | Key idea |
+|---|---|---|---|
+| 1 | 6 | Register the Argo chart repo and cache its index | `helm repo add` / `update` |
+| 2 | 9 | Render Argo CD with no CRDs in the output | `--skip-crds` does nothing here |
+| 3 | 8 | Install Argo CD, keeping its CRDs out of the cluster | `--set crds.install=false` |
+| 4 | 7 | Render a chart's CRDs, which are missing by default | `--include-crds` |
+| 5 | 6 | Report the app version a chart version ships | `helm show chart` |
+| 6 | 8 | Install from a values file you author | `-f`, nested keys |
+| 7 | 8 | Install the same chart from an OCI registry | `oci://`, no repo |
+| 8 | 8 | Change chart version, keep the configured values | `--reuse-values` |
+| 9 | 8 | Find a release `helm list` refuses to show | `helm list -A -a`, pending-install |
+| 10 | 8 | Report what Helm thinks the release consists of | `helm status --show-resources` |
+| 11 | 8 | Store a nested object in one flag | `--set-json` |
+| 12 | 9 | Fetch a chart from OCI, unpacked, without installing | `helm pull --untar --untardir` |
+| 13 | 7 | Inventory every release, every namespace, every state | `helm list -A -a` |
+
+Tasks 2 and 4 are the pair worth doing carefully. They look like the same
+question and have opposite answers, because one chart keeps its CRDs in
+`crds/` and the other keeps them in `templates/`. Getting that wrong is the
+most commonly reported Helm mistake on the exam.
+
+**Order matters.** In exam 2, task 1 registers the repo that tasks 2, 3, 5, 8
+and 10 install from, and task 13 destroys what task 11 asks you to find. In
+exam 3, task 1 feeds 2 and 3, task 6 creates the namespace 7 and 8 use, and
+task 9 must be done before 13. `exam2help` and `exam3help` spell out the
+dependencies. Exam 1 has one such pair: read task 8 before you run task 7.
+
+## Showing it to someone else
+
+`demo/record-demo.sh` records a scripted terminal walkthrough with
+[asciinema](https://asciinema.org) and renders it to a GIF and an animated SVG:
+
+```bash
+pip install asciinema
+cargo install --git https://github.com/asciinema/agg
+
+./demo/record-demo.sh            # exam 1
+EXAM=3 ./demo/record-demo.sh     # exam 3
+```
+
+It types the commands itself, so the recording is reproducible.
+[demo/README.md](demo/README.md) compares the formats — GIF, SVG, asciinema
+embed, MP4, screenshots — and which ones survive being posted where.
 
 ## Scoring
 
@@ -145,8 +202,8 @@ which is also how the real exam's automated checks behave.
   SCORE: 74/100  (74%)   PASS
 ```
 
-`exam` and `exam2` show a ✔ next to tasks that already pass, so you can leave and
-come back.
+`exam`, `exam2` and `exam3` show a ✔ next to tasks that already pass, so you can
+leave and come back.
 
 ## How it works
 
@@ -162,16 +219,35 @@ come back.
    namespace, a genuinely failed release, a chart that fails `helm lint`, a
    parent chart with a vendored subchart.
 
+`setup3.sh` works differently on purpose. There is no local repository — it
+checks egress to the real chart sources, removes any repo the tasks ask you to
+add, and seeds one release stuck in `pending-install` for task 9 (by starting a
+real install and killing it, which is how that state happens in production).
+The charts it uses:
+
+| Alias | Source |
+|---|---|
+| `argo` | `https://argoproj.github.io/argo-helm` |
+| `traefik` | `https://traefik.github.io/charts` |
+| `ingress-nginx` | `https://kubernetes.github.io/ingress-nginx` |
+| `podinfo` | `https://stefanprodan.github.io/podinfo` |
+| `podinfo` (OCI) | `oci://ghcr.io/stefanprodan/charts/podinfo` |
+
+Chart versions are pinned, and historical versions never leave a repo index, so
+the tasks stay valid.
+
 Answers are the cluster's own state. A few tasks want a file instead, and say so
-— those live in `~/answers` (exam 1) and `~/answers2` (exam 2). Working charts
-and values files for exam 2 are in `~/exam2`.
+— those live in `~/answers`, `~/answers2` and `~/answers3`. Charts and values
+files you author go in `~/exam2` and `~/exam3`.
 
 ### Requirements
 
 - a real cluster and `kubectl` that can reach it (Killercoda, kind, minikube, k3s)
-- `python3`, to serve the local chart repository
+- `python3`, to serve the local chart repository (exams 1 and 2)
 - `bash` 3.2 or newer
-- Helm 3 or 4 — installed automatically if absent
+- Helm 3.10 or newer — installed automatically if absent
+  (exam 3 task 11 uses `--set-json`, added in 3.10)
+- internet access, for exam 3 only
 
 ## Troubleshooting
 
@@ -180,10 +256,17 @@ Either `cd ~/cka-helm-practice`, or load the functions and forget about
 directories: `source ~/cka-helm-practice/activate.sh`.
 
 **Every task suddenly shows ✘** — the Killercoda session expired and took the
-cluster with it. Re-seed: `examreset` (or `exam2reset`).
+cluster with it. Re-seed: `examreset`, `exam2reset` or `exam3reset`.
 
 **Task 1 of exam 2 fails after a session restart** — the local chart repo server
 died. `exam2reset` restarts it.
+
+**`setup3.sh` says it cannot reach the chart repositories** — exam 3 installs
+from the real internet by design. If the environment is offline, use exam 1 or
+exam 2, which serve their charts from `localhost`.
+
+**Exam 3 task 11 always scores zero** — `--set-json` needs Helm 3.10+. Check
+`helm version`.
 
 **A task scores zero and you are sure it is right** — run `grade N` on its own,
 then work through `explain N`; each walkthrough ends with the exact verification
