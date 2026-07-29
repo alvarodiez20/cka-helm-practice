@@ -27,6 +27,47 @@ anywhere:
 ./demo/record-demo.sh --render-only  # on your laptop, needs agg
 ```
 
+## Recording on Killercoda
+
+The [CKA playground](https://killercoda.com/playgrounds/scenario/cka) needs a
+login, and its session is x86_64 Ubuntu. Paste this in one go:
+
+```bash
+# 1. seed exam 3 and load the commands
+curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=3 bash
+source ~/cka-helm-practice/activate.sh
+
+# 2. bootstrap.sh does not fetch the recorder, so get it separately
+mkdir -p ~/cka-helm-practice/demo
+curl -fsSL -o ~/cka-helm-practice/demo/record-demo.sh \
+  https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/demo/record-demo.sh
+chmod +x ~/cka-helm-practice/demo/record-demo.sh
+
+# 3. recorder + renderer (prebuilt agg binary, no Rust toolchain needed)
+pip install asciinema || apt-get install -y asciinema
+curl -fsSL -o /usr/local/bin/agg \
+  https://github.com/asciinema/agg/releases/latest/download/agg-x86_64-unknown-linux-gnu
+chmod +x /usr/local/bin/agg
+
+# 4. record
+cd ~/cka-helm-practice && EXAM=3 ./demo/record-demo.sh
+```
+
+Solve the exam before recording if you want the full `grade3` to come up
+green — `solve3 N` prints the commands for each task, and `exam3help` gives the
+order they depend on.
+
+Getting the result off the Killercoda VM: serve it and use the session's
+traffic-port feature.
+
+```bash
+cd ~/cka-helm-practice/demo/out && python3 -m http.server 8080
+```
+
+Then open port 8080 from the Killercoda UI and download the `.gif`. The `.cast`
+is only a few KB, so an alternative is to `cat` it, copy the JSON out, and run
+`agg` on your laptop instead.
+
 ## The options, and what each one is actually good for
 
 | Format | Where it works | Size | Trade-off |

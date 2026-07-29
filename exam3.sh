@@ -388,41 +388,42 @@ exist in the newer chart. When an upgrade fails right after you used it,
 that is the first thing to suspect."
 
 # ─────────────────────────── 9 ───────────────────────────
-Q[9]="A Helm release in this cluster is stuck: 'helm list --all-namespaces' does not
-show it, yet it holds its name and blocks any reinstall under that name.
-Find it and remove it completely, so that not even a listing that includes
-every state shows it any more."
+Q[9]="A release somewhere in this cluster is stuck in 'pending-install': it holds its
+name and blocks any reinstall under that name, and on Helm 3 the default
+listing will not even show it.
+Find it and remove it completely — no release record may survive."
 PTS[9]=8
-SOL[9]="helm list -A -a                       # 'stuck-report' in limbo, pending-install
+SOL[9]="helm list -A --pending               # 'stuck-report' in limbo, pending-install
 helm uninstall stuck-report -n limbo"
-WALK[9]="1. Start from the symptom. The default listing hides it:
+WALK[9]="1. Which listing shows it depends on your Helm major version, and this is
+   worth knowing cold because the CKA now ships Helm 4:
 
-     helm list -A                # nothing unusual
+     Helm 3   'helm list' shows only deployed and failed releases. States
+              like pending-install, pending-upgrade and uninstalling are
+              hidden until you pass -a/--all.
+     Helm 4   'helm list' shows EVERY status by default, and -a/--all was
+              removed. Passing it is a hard error:
+                Error: unknown shorthand flag: 'a' in -a
 
-   'helm list' only shows deployed and failed releases. States such as
-   pending-install, pending-upgrade and uninstalling are filtered out by
-   default — which is exactly why a stuck release feels invisible.
+   So the portable move is neither -a nor the bare default — it is the
+   status filter, which exists in both:
 
-2. Ask for everything:
-
-     helm list -A -a
+     helm list -A --pending
      # NAME          NAMESPACE  REVISION  STATUS
      # stuck-report  limbo      1         pending-install
 
-   -A is --all-namespaces, -a is --all (every status). You can also target
-   the state directly:
+   -A is --all-namespaces. Without it you are searching one namespace.
 
-     helm list -A --pending
-
-3. pending-install means an install was interrupted — the process died
+2. pending-install means an install was interrupted — the process died
    between writing the release record and finishing. There is nothing to
    roll back to, so the fix is to remove the record:
 
      helm uninstall stuck-report -n limbo
 
-4. Verify it is really gone, not merely hidden:
+3. Verify it is really gone, not merely hidden. The release Secret is the
+   ground truth, independent of what 'helm list' decides to display:
 
-     helm list -A -a | grep stuck-report      # no output
+     helm list -A --pending                              # no output
      kubectl get secret -n limbo | grep sh.helm.release   # no output
 
 Know the shape of the underlying object: every revision is a Secret named
@@ -439,29 +440,42 @@ Q[10]="Write into ${ANS}/q10.txt the Kubernetes resources that Helm itself
 considers part of the release 'oci-web' in the namespace 'demo'.
 Use Helm's own status output, not kubectl."
 PTS[10]=8
-SOL[10]="helm status oci-web -n demo --show-resources > ${ANS}/q10.txt"
-WALK[10]="1. 'helm status' on its own prints the release header — revision, last
-   deployed, status, notes — but no object list:
+SOL[10]="helm status oci-web -n demo > ${ANS}/q10.txt     # Helm 4: resources included
+# On Helm 3 the resources section is opt-in:
+#   helm status oci-web -n demo --show-resources > ${ANS}/q10.txt"
+WALK[10]="1. Check which Helm you are on first, because this is the third command in
+   this exam whose Helm 3 flag became the Helm 4 default:
 
-     helm status oci-web -n demo
+     helm version --short
 
-2. --show-resources adds a RESOURCES section, grouped by API version and
-   kind, with the same readiness columns kubectl would give you:
+     Helm 3   'helm status' prints only the header — revision, last deployed,
+              status, notes. The object list is opt-in via --show-resources.
+     Helm 4   the RESOURCES section is always included, and --show-resources
+              was REMOVED. Passing it errors:
+                Error: unknown flag: --show-resources
 
-     helm status oci-web -n demo --show-resources
+2. So run whichever your version wants:
+
+     helm status oci-web -n demo                     # Helm 4
+     helm status oci-web -n demo --show-resources    # Helm 3
+
+   Either way you get the objects grouped by API version and kind, with the
+   readiness columns kubectl would give you:
 
      # RESOURCES:
      # ==> v1/Service
-     # NAME             TYPE        CLUSTER-IP    ...
-     # oci-web-podinfo  ClusterIP   10.96.x.x     ...
+     # NAME             TYPE       CLUSTER-IP    PORT(S)
+     # oci-web-podinfo  ClusterIP  10.99.17.165  9898/TCP,9999/TCP
      #
-     # ==> apps/v1/Deployment
+     # ==> v1/Deployment
      # NAME             READY  UP-TO-DATE  AVAILABLE
      # oci-web-podinfo  1/1    1           1
+     #
+     # ==> v1/Pod(related)
 
 3. Redirect it:
 
-     helm status oci-web -n demo --show-resources > ${ANS}/q10.txt
+     helm status oci-web -n demo > ${ANS}/q10.txt
      cat ${ANS}/q10.txt
 
 Two neighbouring commands, and knowing which one a task wants is the skill:
@@ -578,14 +592,21 @@ use pull when you need the files on disk, show when you only need to read."
 Q[13]="Write into ${ANS}/q13.txt a complete inventory of the Helm releases in
 this cluster: every namespace, and every status — not only the deployed ones."
 PTS[13]=7
-SOL[13]="helm list -A -a > ${ANS}/q13.txt"
-WALK[13]="1. Both halves of 'complete' are a flag, and each is a separate habit worth
-   having:
+SOL[13]="helm list -A > ${ANS}/q13.txt        # Helm 4: all statuses by default
+# On Helm 3 the same task needs the --all flag:
+#   helm list -A -a > ${ANS}/q13.txt"
+WALK[13]="1. 'Every namespace' is always a flag; 'every status' depends on your Helm
+   version, which is the trap:
 
-     -A / --all-namespaces   otherwise you only see the current namespace
-     -a / --all              otherwise pending/uninstalling states are hidden
+     -A / --all-namespaces   both versions — without it you see one namespace
+     -a / --all              Helm 3 ONLY. Helm 4 removed it and lists every
+                             status by default, so passing it errors out.
 
-     helm list -A -a > ${ANS}/q13.txt
+   Check what you are on before choosing:
+
+     helm version --short
+     helm list -A > ${ANS}/q13.txt        # Helm 4
+     helm list -A -a > ${ANS}/q13.txt     # Helm 3
 
 2. Verify the file has the releases you created across three namespaces:
 
@@ -600,15 +621,16 @@ WALK[13]="1. Both halves of 'complete' are a flag, and each is a separate habit 
 3. For scripting, ask for a machine-readable shape instead of parsing
    columns:
 
-     helm list -A -a -o json
-     helm list -A -a -o yaml
+     helm list -A -o json
+     helm list -A -o yaml
 
-The filters, since a task usually asks for one specific slice:
+The status filters are the version-proof way to ask, because they exist in
+both Helm 3 and Helm 4:
 
      helm list -A --failed        # failed only
      helm list -A --pending       # pending-install / pending-upgrade
      helm list -A --uninstalled   # kept with --keep-history
-     helm list -A --deployed      # the default view
+     helm list -A --deployed      # what Helm 3 showed by default
      helm list -A -f '^web'       # regex on the release name
      helm list -A --max 5 --date  # newest first, capped
 
@@ -617,10 +639,18 @@ the single most common reason a task that says 'find the release' scores
 zero — the release is fine, you were just looking in one namespace."
 
 # ─────────────── grading helpers ───────────────
+# Helm 3 hides pending/uninstalling releases from 'helm list' unless you pass
+# -a/--all. Helm 4 REMOVED that flag, because it now lists every status by
+# default — so '-a' is not merely unnecessary there, it is a hard error:
+#   Error: unknown shorthand flag: 'a' in -a
+# Probe the capability once rather than parsing version numbers.
+if helm list -a --max 1 >/dev/null 2>&1; then HALL="-a"; else HALL=""; fi
+
 hfield(){ # release ns field -> value
-  helm list -n "$2" -a --filter "^$1\$" -o json 2>/dev/null \
+  helm list -n "$2" $HALL --filter "^$1\$" -o json 2>/dev/null \
     | tr '{},' '\n' | grep "\"$3\":" | head -1 | cut -d'"' -f4
 }
+hlistall(){ helm list -A $HALL 2>/dev/null; }
 hvals(){ helm get values "$1" -n "$2" ${3:-} -o json 2>/dev/null; }
 nsexists(){ kubectl get ns "$1" >/dev/null 2>&1; }
 filehas(){ [ -f "$1" ] && grep -q "$2" "$1"; }
@@ -647,7 +677,7 @@ check(){
        && ! kubectl get crd applications.argoproj.io >/dev/null 2>&1 ;;
     4) repoalias traefik \
        && [ "$(countin "$ANS/q4.yaml" 'kind: CustomResourceDefinition')" -ge 10 ] \
-       && ! helm list -A -a 2>/dev/null | grep -qE '^traefik[[:space:]]' ;;
+       && ! hlistall | grep -qE '^traefik[[:space:]]' ;;
     5) repoalias ingress-nginx \
        && [ -f "$ANS/q5.txt" ] \
        && [ "$(tr -d '[:space:]"' < "$ANS/q5.txt")" = "1.12.0" ] ;;
@@ -663,9 +693,13 @@ check(){
        && hvals web demo | grep -q '"replicaCount":2' \
        && hvals web demo | grep -q '"type":"NodePort"' ;;
     # nsexists limbo keeps this from passing on an unseeded cluster, where
-    # "the stuck release is absent" would otherwise be trivially true.
+    # "the stuck release is absent" would otherwise be trivially true. The
+    # release-secret check is the real proof: a release Helm still knows about
+    # always has one, whatever 'helm list' chooses to show.
     9) nsexists limbo \
-       && ! helm list -A -a 2>/dev/null | grep -q 'stuck-report' ;;
+       && ! hlistall | grep -q 'stuck-report' \
+       && ! kubectl get secret -n limbo -o name 2>/dev/null \
+            | grep -q 'sh.helm.release.v1.stuck-report' ;;
     10) filehas "$ANS/q10.txt" 'oci-web-podinfo' \
        && filehas "$ANS/q10.txt" 'Deployment' ;;
     11) hvals web demo | tr -d ' ' | grep -q '"limits"' \

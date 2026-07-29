@@ -91,8 +91,11 @@ kubectl create ns limbo >/dev/null 2>&1
 helm repo add _seed3 "$PODINFO_URL" >/dev/null 2>&1
 helm repo update _seed3 >/dev/null 2>&1
 
-helm install stuck-report _seed3/podinfo --version 6.7.0 -n limbo \
-  --wait --timeout 5m >/dev/null 2>&1 &
+# 'set +m' disables job control so bash does not print its own
+# "line 99: 6366 Killed  helm install ..." notice when we kill the job.
+set +m
+{ helm install stuck-report _seed3/podinfo --version 6.7.0 -n limbo \
+    --wait --timeout 5m >/dev/null 2>&1 & } 2>/dev/null
 SEED_PID=$!
 sleep 6
 kill -9 "$SEED_PID" >/dev/null 2>&1
@@ -100,8 +103,10 @@ pkill -9 -f "helm install stuck-report" >/dev/null 2>&1
 wait "$SEED_PID" 2>/dev/null
 sleep 2
 
-stuck_status(){ helm list -n limbo -a -o json 2>/dev/null | tr '{},' '\n' \
-  | grep -A0 '"status"' | head -5 | grep -o 'pending-install'; }
+# --pending works on Helm 3 and Helm 4 alike. Helm 4 removed -a/--all (it
+# lists every status by default), so '-a' here would be a hard error and make
+# a successful seed look like a failure.
+stuck_status(){ helm list -n limbo --pending 2>/dev/null | grep -o 'pending-install'; }
 
 if [ -z "$(stuck_status)" ]; then
   # Killing helm did not land it in pending-install (timing varies by cluster).

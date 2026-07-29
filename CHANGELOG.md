@@ -9,6 +9,42 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.1.1] — 2026-07-30
+
+### Fixed
+
+Verified exam 3 end to end on a Killercoda CKA playground — Kubernetes v1.35.1
+and **Helm 4.1.1**, which is what the current exam ships. Helm 4 promoted
+several Helm 3 flags to defaults and then removed the flags, so passing them is
+a hard error rather than a harmless no-op. Three places were affected:
+
+- `helm list -a` no longer exists (Helm 4 lists every status by default). This
+  broke `hfield()` — and therefore every release-based grader — and made task 9
+  report a **false pass**, because the failing `-a` produced no output and the
+  "release is absent" check trivially succeeded. Graders now probe the flag once
+  and adapt, and task 9 additionally verifies the release Secret is gone, which
+  is version-independent ground truth.
+- `helm status --show-resources` no longer exists (resources are always
+  included). Task 10's solution used it, so the answer file came out empty.
+- Task 9 and 13 statements assumed Helm 3's hiding behaviour. Both now teach the
+  status filters (`--pending`), which behave identically on 3 and 4.
+
+Also in `setup3.sh`: the `pending-install` seeding worked all along, but its
+verification used `helm list -a` and so reported failure; and killing the
+background install leaked a raw `line 99: 6366 Killed` job notice into the setup
+output, now suppressed with `set +m`.
+
+Exam 3 scores 100/100 on Helm 4 after these fixes. Exams 1 and 2 use only flags
+Helm 4 kept and needed no changes.
+
+### Added
+
+- `demo/out/cka-helm-practice-exam3.{cast,gif}` — the recording, made on a real
+  Killercoda playground, and linked at the top of the README.
+- `demo/README.md`: a paste-ready Killercoda block, including the two things that
+  otherwise bite — `bootstrap.sh` does not fetch `record-demo.sh`, and Killercoda
+  is x86_64 so it needs the `agg-x86_64-unknown-linux-gnu` build.
+
 ## [1.1.0] — 2026-07-30
 
 Three exams, 39 tasks, 300 points total.
@@ -114,5 +150,6 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.1.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.0
 [1.0.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.0.0

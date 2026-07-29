@@ -4,7 +4,7 @@
 
 **Three hands-on Helm exams for the CKA. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Tasks](https://img.shields.io/badge/tasks-39-orange?style=flat-square)](#the-three-exams)
 [![Points](https://img.shields.io/badge/points-300-orange?style=flat-square)](#scoring)
@@ -21,13 +21,9 @@
 
 [Quick start](#quick-start) · [Commands](#commands) · [The three exams](#the-three-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
 
-<!-- TODO: uncomment once you have run ./demo/record-demo.sh on a cluster host.
-     Left commented so the README does not show a broken image before then.
-     Prefer the .svg if you rendered one — ~10x smaller and stays sharp.
-     See demo/README.md.
-
-![Grading a rollback against a live cluster](demo/out/cka-helm-practice-exam1.gif)
--->
+<!-- Recorded with demo/record-demo.sh on a Killercoda CKA playground
+     (Kubernetes v1.35.1, Helm 4.1.1). See demo/README.md. -->
+![Exam 3: the --skip-crds trap, then a full 100/100 graded against a live cluster](demo/out/cka-helm-practice-exam3.gif)
 
 </div>
 
@@ -248,6 +244,20 @@ files you author go in `~/exam2` and `~/exam3`.
 - Helm 3.10 or newer — installed automatically if absent
   (exam 3 task 11 uses `--set-json`, added in 3.10)
 - internet access, for exam 3 only
+
+All three exams are tested on **Helm 3 and Helm 4**. Helm 4 turned several Helm 3
+flags into defaults and then removed the flags, so passing them is now a hard
+error rather than a no-op. Exam 3 teaches the differences where they come up, and
+the graders detect which version you are on:
+
+| Task | Helm 3 | Helm 4 |
+|---|---|---|
+| 9 | `helm list -a` to see pending releases | lists every status by default; `-a` removed |
+| 10 | `helm status --show-resources` | resources always included; flag removed |
+| 13 | `helm list -A -a` | `helm list -A` |
+
+`--pending`, `--failed` and the other status filters work on both, which is why
+the solutions prefer them.
 
 ## Troubleshooting
 
