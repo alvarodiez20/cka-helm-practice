@@ -31,16 +31,30 @@ cd cka-helm-practice && ./setup.sh
 en 127.0.0.1:8879** (así el examen funciona aunque no haya internet), y siembra
 el cluster con dos releases en el estado que necesitan las preguntas.
 
-Luego:
+Al terminar, `setup.sh` deja los comandos del examen listos. Cárgalos en el
+shell actual (en los siguientes ya entran solos, vía `~/.bashrc`):
 
 ```bash
-./exam.sh            # las 13 preguntas con sus puntos
-./exam.sh q 4        # leer una pregunta
-./exam.sh grade      # corregir todo -> nota sobre 100
-./exam.sh grade 4    # corregir solo una
-./exam.sh solve 4    # solución (solo cuando te rindas)
-./exam.sh reset      # volver a sembrar el entorno desde cero
+source ~/cka-helm-practice/activate.sh
 ```
+
+Y a partir de ahí, **desde cualquier directorio**:
+
+```bash
+exam           # las 13 preguntas con sus puntos
+q 4            # leer una pregunta
+grade          # corregir todo -> nota sobre 100
+grade 4        # corregir solo una
+solve 4        # solución (solo cuando te rindas)
+examreset      # volver a sembrar el entorno desde cero
+```
+
+`q`, `grade` y `solve` autocompletan el número de pregunta con Tab. Son
+funciones de shell, no un REPL: sigues teniendo `kubectl` y `helm` a mano, que
+es donde se resuelve el examen de verdad.
+
+Si prefieres no tocar tu shell, todo funciona igual llamando al script:
+`./exam.sh`, `./exam.sh q 4`, `./exam.sh grade`, `./exam.sh reset`.
 
 La sesión de Killercoda caduca en ~1 hora. Al volver, `./setup.sh` otra vez.
 

@@ -148,9 +148,21 @@ ok "release 'ghost' sembrada en un namespace que tendras que encontrar"
 mkdir -p "$BASE/answers"
 echo
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-printf "%s  Listo.%s Ahora:\n\n" "$G$BO" "$N"
-printf "    cd %s\n" "$HERE"
-printf "    ./exam.sh          %s# ver las 13 preguntas%s\n" "$D" "$N"
-printf "    ./exam.sh q 1      %s# leer una pregunta%s\n" "$D" "$N"
-printf "    ./exam.sh grade    %s# corregir y ver tu nota sobre 100%s\n\n" "$D" "$N"
-printf "  %sSi reinicias la sesion de Killercoda, vuelve a ejecutar ./setup.sh%s\n\n" "$D" "$N"
+
+# Deja los comandos del examen cargados en cada shell nueva.
+SRC_LINE="source ${HERE}/activate.sh"
+if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
+  printf '\n# cka-helm-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
+  ok "comandos del examen anadidos a ~/.bashrc"
+fi
+
+printf "%s  Listo.%s Carga los comandos en este shell:\n\n" "$G$BO" "$N"
+printf "    %s\n\n" "$SRC_LINE"
+printf "  Y a partir de ahi, desde cualquier directorio:\n\n"
+printf "    exam           %s# ver las 13 preguntas%s\n" "$D" "$N"
+printf "    q 1            %s# leer una pregunta%s\n" "$D" "$N"
+printf "    grade          %s# corregir y ver tu nota sobre 100%s\n" "$D" "$N"
+printf "    grade 4        %s# corregir solo una%s\n" "$D" "$N"
+printf "    solve 4        %s# ver la solucion%s\n\n" "$D" "$N"
+printf "  %sEn shells nuevas ya se cargan solos. Si reinicias la sesion de%s\n" "$D" "$N"
+printf "  %sKillercoda, vuelve a ejecutar %s/setup.sh%s\n\n" "$D" "$HERE" "$N"

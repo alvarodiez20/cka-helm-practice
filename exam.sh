@@ -20,6 +20,10 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
+# Si activate.sh esta cargado, los comandos son 'q 1' / 'grade';
+# si no, hay que llamar al script.
+if [ -n "${EXAM_HOME:-}" ]; then P=""; else P="./exam.sh "; fi
+
 TOTAL=13
 declare -A Q PTS SOL
 
@@ -172,7 +176,7 @@ show(){
   printf "\n%s┌─ Pregunta %s/%s ─ %s puntos%s\n" "$B" "$1" "$TOTAL" "${PTS[$1]}" "$N"
   printf "%s└%s\n" "$B" "$N"
   echo "${Q[$1]}"
-  printf "\n%s  cuando la termines:  ./exam.sh grade %s%s\n\n" "$D" "$1" "$N"
+  printf "\n%s  cuando la termines:  %sgrade %s%s\n\n" "$D" "$P" "$1" "$N"
 }
 
 grade_one(){
@@ -207,7 +211,7 @@ case "${1:-list}" in
       first="$(echo "${Q[$i]}" | head -1)"
       printf "  [%s] %2s  %-3s pts  %s\n" "$m" "$i" "${PTS[$i]}" "${first:0:58}"
     done
-    printf "\n  %s./exam.sh q N   ·   ./exam.sh grade   ·   ./exam.sh solve N%s\n\n" "$D" "$N" ;;
+    printf "\n  %s%sq N   ·   %sgrade   ·   %ssolve N%s\n\n" "$D" "$P" "$P" "$P" "$N" ;;
   q|show) show "${2:?falta el numero de pregunta}" ;;
   grade)
     if [ $# -ge 2 ]; then printf "\n"; grade_one "$2"; printf "\n"
