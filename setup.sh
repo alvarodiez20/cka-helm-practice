@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
 #  cka-helm-practice · setup.sh
-#  Prepara un entorno de examen de Helm sobre un cluster real
-#  (Killercoda, kind, minikube...). Todo offline salvo las
-#  imagenes de los pods.
+#  Prepares a Helm exam environment on a real cluster
+#  (Killercoda, kind, minikube...). Fully offline except for
+#  the pod images.
 # ============================================================
 set -uo pipefail
 
@@ -22,23 +22,23 @@ warn(){ printf "  ${Y}!${N} %s\n" "$*"; }
 die(){ printf "  ${R}✘${N} %s\n" "$*"; exit 1; }
 
 echo
-printf "%s  Preparando el entorno de examen de Helm%s\n\n" "$BO" "$N"
+printf "%s  Preparing the Helm exam environment%s\n\n" "$BO" "$N"
 
-# ── 1. Requisitos ───────────────────────────────────────────
-command -v kubectl >/dev/null || die "no hay kubectl: ejecuta esto en un nodo con cluster (Killercoda, kind, minikube)"
-kubectl get nodes >/dev/null 2>&1 || die "kubectl no puede hablar con ningun cluster"
-ok "cluster accesible"
+# ── 1. Requirements ─────────────────────────────────────────
+command -v kubectl >/dev/null || die "no kubectl found: run this on a node with a cluster (Killercoda, kind, minikube)"
+kubectl get nodes >/dev/null 2>&1 || die "kubectl cannot reach any cluster"
+ok "cluster reachable"
 
 if ! command -v helm >/dev/null; then
-  warn "helm no esta instalado, instalandolo..."
+  warn "helm is not installed, installing it..."
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash >/dev/null 2>&1 \
-    || die "no he podido instalar helm; instalalo a mano y vuelve a ejecutar setup.sh"
+    || die "could not install helm; install it manually and run setup.sh again"
 fi
 ok "helm $(helm version --short 2>/dev/null || echo '?')"
 
-command -v python3 >/dev/null || die "hace falta python3 para servir el repo local de charts"
+command -v python3 >/dev/null || die "python3 is required to serve the local chart repo"
 
-# ── 2. Chart de practica, en 3 versiones ────────────────────
+# ── 2. Practice chart, in 3 versions ────────────────────────
 rm -rf "$LAB"; mkdir -p "$CHARTS" "$SRC" "$BASE/answers"
 
 build_chart(){ # $1 = version, $2 = appVersion
@@ -47,7 +47,7 @@ build_chart(){ # $1 = version, $2 = appVersion
   cat > "$d/Chart.yaml" <<EOF
 apiVersion: v2
 name: demo-app
-description: Chart de practica para el examen de Helm del CKA
+description: Practice chart for the CKA Helm exam
 type: application
 version: $v
 appVersion: "$av"
@@ -105,64 +105,64 @@ spec:
     - port: {{ .Values.service.port }}
       targetPort: 80
 EOF
-  helm package "$d" -d "$CHARTS" >/dev/null 2>&1 || die "fallo al empaquetar demo-app $v"
+  helm package "$d" -d "$CHARTS" >/dev/null 2>&1 || die "failed to package demo-app $v"
 }
 
 build_chart 0.1.0 1.0.0
 build_chart 0.2.0 1.1.0
 build_chart 0.3.0 2.0.0
 helm repo index "$CHARTS" >/dev/null 2>&1
-ok "chart demo-app empaquetado en 3 versiones (0.1.0, 0.2.0, 0.3.0)"
+ok "chart demo-app packaged in 3 versions (0.1.0, 0.2.0, 0.3.0)"
 
-# ── 3. Servidor del repo local ──────────────────────────────
+# ── 3. Local repo server ────────────────────────────────────
 pkill -f "http.server ${PORT}" >/dev/null 2>&1
 nohup python3 -m http.server "$PORT" --directory "$CHARTS" >/dev/null 2>&1 &
 sleep 1
-curl -sf "$REPO_URL/index.yaml" >/dev/null || die "el repo local no responde en $REPO_URL"
-ok "repo local sirviendo en $REPO_URL"
+curl -sf "$REPO_URL/index.yaml" >/dev/null || die "the local repo is not responding at $REPO_URL"
+ok "local repo serving at $REPO_URL"
 
 helm repo remove "$REPO_NAME" >/dev/null 2>&1
-helm repo add "$REPO_NAME" "$REPO_URL" >/dev/null 2>&1 || die "no he podido anadir el repo"
+helm repo add "$REPO_NAME" "$REPO_URL" >/dev/null 2>&1 || die "could not add the repo"
 helm repo update >/dev/null 2>&1
-ok "repo '$REPO_NAME' anadido"
+ok "repo '$REPO_NAME' added"
 
-# ── 4. Estado inicial del examen ────────────────────────────
+# ── 4. Initial exam state ───────────────────────────────────
 for ns in apps hidden-77 web dev; do kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1; done
 sleep 3
 kubectl create ns apps      >/dev/null 2>&1
 kubectl create ns hidden-77 >/dev/null 2>&1
 
-# 'legacy': tres revisiones, la actual apunta a una imagen que no existe
+# 'legacy': three revisions, the current one points at an image that does not exist
 helm install legacy "$REPO_NAME/demo-app" --version 0.1.0 -n apps \
   --set replicaCount=1 >/dev/null 2>&1
 helm upgrade legacy "$REPO_NAME/demo-app" --version 0.2.0 -n apps \
   --set replicaCount=2 >/dev/null 2>&1
 helm upgrade legacy "$REPO_NAME/demo-app" --version 0.2.0 -n apps \
-  --set replicaCount=2 --set image.tag=no-existe-esta-tag >/dev/null 2>&1
-ok "release 'legacy' sembrada en el namespace apps (3 revisiones, la ultima rota)"
+  --set replicaCount=2 --set image.tag=does-not-exist-tag >/dev/null 2>&1
+ok "release 'legacy' seeded in namespace apps (3 revisions, the last one broken)"
 
-# 'ghost': escondida en un namespace poco obvio
+# 'ghost': hidden in a non-obvious namespace
 helm install ghost "$REPO_NAME/demo-app" --version 0.1.0 -n hidden-77 >/dev/null 2>&1
-ok "release 'ghost' sembrada en un namespace que tendras que encontrar"
+ok "release 'ghost' seeded in a namespace you will have to find"
 
 mkdir -p "$BASE/answers"
 echo
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Deja los comandos del examen cargados en cada shell nueva.
+# Make the exam commands available in every new shell.
 SRC_LINE="source ${HERE}/activate.sh"
 if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
   printf '\n# cka-helm-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
-  ok "comandos del examen anadidos a ~/.bashrc"
+  ok "exam commands added to ~/.bashrc"
 fi
 
-printf "%s  Listo.%s Carga los comandos en este shell:\n\n" "$G$BO" "$N"
+printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
-printf "  Y a partir de ahi, desde cualquier directorio:\n\n"
-printf "    exam           %s# ver las 13 preguntas%s\n" "$D" "$N"
-printf "    q 1            %s# leer una pregunta%s\n" "$D" "$N"
-printf "    grade          %s# corregir y ver tu nota sobre 100%s\n" "$D" "$N"
-printf "    explain 1      %s# resolucion paso a paso%s\n" "$D" "$N"
-printf "    examhelp       %s# ayuda completa%s\n\n" "$D" "$N"
-printf "  %sEn shells nuevas ya se cargan solos. Si reinicias la sesion de%s\n" "$D" "$N"
-printf "  %sKillercoda, vuelve a ejecutar %s/setup.sh%s\n\n" "$D" "$HERE" "$N"
+printf "  Then, from any directory:\n\n"
+printf "    exam           %s# list the 13 tasks%s\n" "$D" "$N"
+printf "    q 1            %s# read a task%s\n" "$D" "$N"
+printf "    grade          %s# grade and see your score out of 100%s\n" "$D" "$N"
+printf "    explain 1      %s# step-by-step walkthrough%s\n" "$D" "$N"
+printf "    examhelp       %s# full help%s\n\n" "$D" "$N"
+printf "  %sNew shells load them automatically. If the Killercoda session%s\n" "$D" "$N"
+printf "  %sexpires, run %s/setup.sh again.%s\n\n" "$D" "$HERE" "$N"

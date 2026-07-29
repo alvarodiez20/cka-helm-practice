@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 # ============================================================
 #  cka-helm-practice · activate.sh
-#  Define los comandos del examen en TU shell, para no tener
-#  que escribir ./exam.sh ni estar en el directorio del repo.
+#  Defines the exam commands in YOUR shell, so you never have
+#  to type ./exam.sh or sit in the repo directory.
 #
 #    source ~/cka-helm-practice/activate.sh
 #
-#  A partir de ahi:
-#    exam        q 4          grade      grade 4
-#    examhelp    explain 4    solve 4    examreset
+#  Exam 1:  exam      q 4      grade   grade 4
+#           examhelp  explain 4         solve 4     examreset
+#
+#  Exam 2:  exam2     q2 4     grade2  grade2 4
+#           exam2help explain2 4       solve2 4    exam2reset
 # ============================================================
 
-# Este fichero hay que 'source'arlo, no ejecutarlo: si lo ejecutas, las
-# funciones se definen en un subshell que muere al terminar.
+# This file must be sourced, not executed: if you run it, the functions
+# are defined in a subshell that dies on exit.
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
-  echo "  esto hay que cargarlo en el shell actual:" >&2
+  echo "  this has to be loaded into your current shell:" >&2
   echo "      source ${BASH_SOURCE[0]}" >&2
   exit 1
 fi
@@ -22,21 +24,30 @@ fi
 EXAM_HOME="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 export EXAM_HOME
 
-# Invocamos los scripts directamente para que mande su shebang
-# (env bash), no el bash que tengamos delante en el PATH.
-exam()      { "$EXAM_HOME/exam.sh" "$@"; }
-q()         { "$EXAM_HOME/exam.sh" q "$@"; }
-grade()     { "$EXAM_HOME/exam.sh" grade "$@"; }
-solve()     { "$EXAM_HOME/exam.sh" solve "$@"; }
-explain()   { "$EXAM_HOME/exam.sh" explain "$@"; }
-examhelp()  { "$EXAM_HOME/exam.sh" help; }
-examreset() { "$EXAM_HOME/setup.sh"; }
+# We invoke the scripts directly so their shebang (env bash) decides which
+# bash runs them, rather than whichever bash happens to be first in PATH.
+exam()       { "$EXAM_HOME/exam.sh" "$@"; }
+q()          { "$EXAM_HOME/exam.sh" q "$@"; }
+grade()      { "$EXAM_HOME/exam.sh" grade "$@"; }
+solve()      { "$EXAM_HOME/exam.sh" solve "$@"; }
+explain()    { "$EXAM_HOME/exam.sh" explain "$@"; }
+examhelp()   { "$EXAM_HOME/exam.sh" help; }
+examreset()  { "$EXAM_HOME/setup.sh"; }
 
-# Tab-completion: numeros de pregunta.
+exam2()      { "$EXAM_HOME/exam2.sh" "$@"; }
+q2()         { "$EXAM_HOME/exam2.sh" q "$@"; }
+grade2()     { "$EXAM_HOME/exam2.sh" grade "$@"; }
+solve2()     { "$EXAM_HOME/exam2.sh" solve "$@"; }
+explain2()   { "$EXAM_HOME/exam2.sh" explain "$@"; }
+exam2help()  { "$EXAM_HOME/exam2.sh" help; }
+exam2reset() { "$EXAM_HOME/setup2.sh"; }
+
+# Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     COMPREPLY=( $(compgen -W "$(seq 1 13)" -- "$cur") )
   }
   complete -F _exam_qnums q grade solve explain
+  complete -F _exam_qnums q2 grade2 solve2 explain2
 fi

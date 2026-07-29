@@ -10,6 +10,7 @@
 #    ./exam.sh solve 4    the commands that solve task 4
 #    ./exam.sh explain 4  step-by-step walkthrough of task 4
 #    ./exam.sh help       full usage
+#    ./exam.sh version    print the exam suite version
 #    ./exam.sh reset      re-seed the cluster (runs setup.sh)
 # ============================================================
 set -uo pipefail
@@ -18,6 +19,7 @@ BASE="${HOME}"
 ANS="$BASE/answers"
 REPO_NAME="ckarepo"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -494,7 +496,7 @@ check(){
        && helm history frontend -n web -o json 2>/dev/null | grep -q 'demo-app-0.2.0' ;;
     2) [ "$(hfield legacy apps status)" = "deployed" ] \
        && [ "$(hnum legacy apps revision)" -ge 4 ] \
-       && ! hvals legacy apps | grep -q 'no-existe-esta-tag' ;;
+       && ! hvals legacy apps | grep -q 'does-not-exist-tag' ;;
     3) [ -f "$ANS/q3.txt" ] \
        && [ "$(tr -d '[:space:]' < "$ANS/q3.txt")" = "hidden-77" ] ;;
     4) [ "$(hfield frontend web chart)" = "demo-app-0.3.0" ] \
@@ -583,6 +585,7 @@ usage(){
   printf "    %-20s %s\n" "${P}explain N"  "step-by-step walkthrough, with the reasoning"
   printf "    %-20s %s\n" "${P}solve N"    "just the commands, no explanation"
   printf "    %-20s %s\n" "${P}help"       "this text"
+  printf "    %-20s %s\n" "${P}version"    "print the exam suite version"
   printf "    %-20s %s\n\n" "${P}reset"    "re-seed the cluster from scratch"
   if [ -z "$P" ]; then
     printf "%s  TAB COMPLETION%s\n\n" "$BO" "$N"
@@ -629,6 +632,7 @@ case "${1:-list}" in
     printf "  %scheck your work:  %sgrade %s%s\n\n" "$D" "$P" "$2" "$N" ;;
   reset) bash "$HERE/setup.sh" ;;
   help|-h|--help) usage ;;
+  version|-v|--version) printf "cka-helm-practice %s (exam 1)\n" "$VERSION" ;;
   *)
     printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"
     usage; exit 1 ;;

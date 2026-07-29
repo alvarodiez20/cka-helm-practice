@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
-# Descarga el examen y prepara el entorno de una sola vez.
+# Downloads the exams and prepares the environment in one go.
 #   curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
+#
+# By default it seeds exam 1. To seed exam 2 instead:
+#   curl -sL .../bootstrap.sh | EXAM=2 bash
 set -uo pipefail
 
 GH_USER="${GH_USER:-alvarodiez20}"
 BRANCH="${GH_BRANCH:-main}"
+EXAM="${EXAM:-1}"
 RAW="https://raw.githubusercontent.com/${GH_USER}/cka-helm-practice/${BRANCH}"
 DEST="${HOME}/cka-helm-practice"
 
 echo
-echo "  Descargando cka-helm-practice desde ${GH_USER}..."
+echo "  Downloading cka-helm-practice from ${GH_USER}..."
 mkdir -p "$DEST" && cd "$DEST" || exit 1
 
-for f in setup.sh exam.sh activate.sh; do
-  curl -fsSL "${RAW}/${f}" -o "$f" || { echo "  no he podido descargar ${f} desde ${RAW}"; exit 1; }
+for f in setup.sh exam.sh setup2.sh exam2.sh activate.sh VERSION; do
+  curl -fsSL "${RAW}/${f}" -o "$f" \
+    || { echo "  could not download ${f} from ${RAW}"; exit 1; }
 done
-chmod +x setup.sh exam.sh activate.sh
+chmod +x setup.sh exam.sh setup2.sh exam2.sh activate.sh
 
-exec ./setup.sh
+case "$EXAM" in
+  2) exec ./setup2.sh ;;
+  *) exec ./setup.sh ;;
+esac
