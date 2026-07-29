@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Descarga el examen y prepara el entorno de una sola vez.
-#   curl -sL https://raw.githubusercontent.com/TU-USUARIO/cka-helm-practice/main/bootstrap.sh | bash
+#   curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 set -uo pipefail
 
-GH_USER="${GH_USER:-TU-USUARIO}"
+GH_USER="${GH_USER:-alvarodiez20}"
 BRANCH="${GH_BRANCH:-main}"
 RAW="https://raw.githubusercontent.com/${GH_USER}/cka-helm-practice/${BRANCH}"
 DEST="${HOME}/cka-helm-practice"

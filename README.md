@@ -17,13 +17,13 @@ Abre **[killercoda.com/playgrounds/scenario/cka](https://killercoda.com/playgrou
 — es el playground cuya versión de Kubernetes coincide con la del examen — y pega:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/TU-USUARIO/cka-helm-practice/main/bootstrap.sh | bash
+curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 ```
 
 O clonando:
 
 ```bash
-git clone https://github.com/TU-USUARIO/cka-helm-practice.git
+git clone https://github.com/alvarodiez20/cka-helm-practice.git
 cd cka-helm-practice && ./setup.sh
 ```
 
