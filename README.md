@@ -2,12 +2,12 @@
 
 # cka-helm-practice
 
-**Four hands-on CKA exams — three on Helm, one on NetworkPolicy and network troubleshooting. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
+**Five hands-on CKA exams — Helm, NetworkPolicy, network troubleshooting and worker node failures. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.2.1-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Tasks](https://img.shields.io/badge/tasks-52-orange?style=flat-square)](#the-four-exams)
-[![Points](https://img.shields.io/badge/points-400-orange?style=flat-square)](#scoring)
+[![Tasks](https://img.shields.io/badge/tasks-65-orange?style=flat-square)](#the-five-exams)
+[![Points](https://img.shields.io/badge/points-500-orange?style=flat-square)](#scoring)
 [![Pass mark](https://img.shields.io/badge/pass%20mark-66-brightgreen?style=flat-square)](#scoring)
 
 [![Helm](https://img.shields.io/badge/Helm-3.x%20%7C%204.x-0F1689?style=flat-square&logo=helm&logoColor=white)](https://helm.sh)
@@ -19,7 +19,7 @@
 [![Last commit](https://img.shields.io/github/last-commit/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice/commits/main)
 [![Repo size](https://img.shields.io/github/repo-size/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice)
 
-[Quick start](#quick-start) · [Commands](#commands) · [The four exams](#the-four-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
+[Quick start](#quick-start) · [Commands](#commands) · [The five exams](#the-five-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
 
 <!-- Recorded with demo/record-demo.sh on a Killercoda CKA playground
      (Kubernetes v1.35.1, Helm 4.1.1). See demo/README.md. -->
@@ -47,13 +47,18 @@ Open the [Killercoda CKA playground](https://killercoda.com/playgrounds/scenario
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 ```
 
-That downloads all four exams and seeds exam 1. To seed a different one:
+That downloads all five exams and seeds exam 1. To seed a different one:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=2 bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=3 bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=4 bash
+curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=5 bash
 ```
+
+**`EXAM=5` deliberately breaks a worker node** — it stops the kubelet, corrupts
+its config and cordons the node. Files are backed up first and `exam5restore`
+puts it all back, but do not point it at a cluster you care about.
 
 Or clone it:
 
@@ -73,35 +78,38 @@ source ~/cka-helm-practice/activate.sh
 
 From any directory, once `activate.sh` is loaded:
 
-| Exam 1 | Exam 2 | Exam 3 | Exam 4 | What it does |
-|---|---|---|---|---|
-| `exam` | `exam2` | `exam3` | `exam4` | list every task with points and ✔/✘ status |
-| `q N` | `q2 N` | `q3 N` | `q4 N` | show task N |
-| `grade` | `grade2` | `grade3` | `grade4` | grade everything, print the score out of 100 |
-| `grade N` | `grade2 N` | `grade3 N` | `grade4 N` | grade one task |
-| `explain N` | `explain2 N` | `explain3 N` | `explain4 N` | step-by-step walkthrough, with the reasoning |
-| `solve N` | `solve2 N` | `solve3 N` | `solve4 N` | just the commands, no explanation |
-| `examhelp` | `exam2help` | `exam3help` | `exam4help` | full usage, including task ordering |
-| `examreset` | `exam2reset` | `exam3reset` | `exam4reset` | re-seed that exam from scratch |
+| Exam 1 | Exam 2 | Exam 3 | Exam 4 | Exam 5 | What it does |
+|---|---|---|---|---|---|
+| `exam` | `exam2` | `exam3` | `exam4` | `exam5` | list every task with points and ✔/✘ status |
+| `q N` | `q2 N` | `q3 N` | `q4 N` | `q5 N` | show task N |
+| `grade` | `grade2` | `grade3` | `grade4` | `grade5` | grade everything, print the score out of 100 |
+| `grade N` | `grade2 N` | `grade3 N` | `grade4 N` | `grade5 N` | grade one task |
+| `explain N` | `explain2 N` | `explain3 N` | `explain4 N` | `explain5 N` | step-by-step walkthrough, with the reasoning |
+| `solve N` | `solve2 N` | `solve3 N` | `solve4 N` | `solve5 N` | just the commands, no explanation |
+| `examhelp` | `exam2help` | `exam3help` | `exam4help` | `exam5help` | full usage, including task ordering |
+| `examreset` | `exam2reset` | `exam3reset` | `exam4reset` | `exam5reset` | re-seed that exam from scratch |
 
-`q`, `grade`, `explain` and `solve` complete task numbers with **Tab**. Exam 4
-adds one more: **`netcheck`**, which drives real traffic between the seeded pods
-and prints what got through.
+`q`, `grade`, `explain` and `solve` complete task numbers with **Tab**. Two exams
+add a command of their own: **`netcheck`** (exam 4) drives real traffic between
+the seeded pods and prints what got through, and **`nodeinfo`** (exam 5) is a
+health dashboard for the broken node, reading both the API server and the node
+itself over ssh. Exam 5 also has **`exam5restore`**.
 
 These are shell functions, not a REPL: `kubectl` and `helm` stay in the
 foreground, which is where the exam is actually solved. If you would rather not
 touch your shell, everything works through the scripts directly — `./exam.sh`,
 `./exam.sh q 4`, `./exam2.sh explain 8`, `./exam4.sh help`.
 
-## The four exams
+## The five exams
 
 They are independent, cover different ground, and can all be active on the same
 cluster at once — separate chart sources, namespaces and answer directories.
 
 Exams 1 and 2 serve their charts from `localhost` and work with no internet.
 Exam 3 deliberately does not: it uses the real public charts the current CKA
-asks about, so it needs egress. Exam 4 needs no Helm at all — it is pure
-`kubectl`, and only needs egress to pull two container images.
+asks about, so it needs egress. Exams 4 and 5 need no Helm at all. Exam 5 is the
+odd one out in a more important way: it needs **two nodes and ssh to the worker**,
+because it breaks that node's kubelet on purpose.
 
 ### Exam 1 — the core workflow
 
@@ -223,14 +231,58 @@ port 53, and *both* ends of a connection have to allow it. Both policies are
 correct and both tasks score. `netcheck` points this out when it sees task 5 in
 place.
 
+### Exam 5 — worker node failures
+
+Seeded by `setup5.sh`. **Needs two nodes and passwordless ssh to the worker**,
+because it breaks that node's kubelet on purpose. Killercoda has both.
+
+| # | Pts | Task | Key idea |
+|---|---|---|---|
+| 1 | 14 | Node is NotReady — three stacked faults | `systemctl status` → `journalctl` → repeat |
+| 2 | 6 | Make the kubelet survive a reboot | `is-active` vs `is-enabled` |
+| 3 | 7 | Ready but nothing schedules | `uncordon`; cordon vs drain |
+| 4 | 8 | Remove a leftover NoSchedule taint | `kubectl taint node <n> key-` |
+| 5 | 8 | Pending pod wants a label the node lacks | fix the **node**, not the Deployment |
+| 6 | 10 | Run a static pod on the node | `staticPodPath` is unset — set it *and* write the manifest |
+| 7 | 8 | DaemonSet skips the control plane | tolerate the taint, don't remove it |
+| 8 | 8 | Pod requests more CPU than exists | requests vs allocatable |
+| 9 | 6 | Record why the scheduler refused | `FailedScheduling` events |
+| 10 | 7 | Report runtime and kubelet version | `.status.nodeInfo` |
+| 11 | 6 | Report the kubelet's `clusterDNS` | read it on the node, not from the Service |
+| 12 | 6 | Count pods assigned to the node | `--field-selector spec.nodeName=` |
+| 13 | 6 | Which file tells the kubelet its config | `systemctl cat kubelet` |
+
+Task 1 is the exam. It carries three faults that surface **one at a time**, so
+each fix reveals the next — which is exactly how the real exam's "the cluster is
+broken again" tasks behave:
+
+| `systemctl status kubelet` says | the actual fault |
+|---|---|
+| `inactive (dead)` | the service is stopped — start it |
+| `activating (auto-restart)` | `clientCAFile` points at a file that does not exist |
+| `active (running)`, node still NotReady | kubeconfig points at port **6553**, not 6443 |
+
+The habit it drills: `systemctl status` to see *how* it is failing,
+`systemctl cat kubelet` to find *which files* it reads, `journalctl -u kubelet`
+to hear it say what is wrong. Then re-check `kubectl get nodes` — two of the
+three faults leave the service looking healthy from some angle.
+
+**This exam breaks a real node.** Both files it edits are backed up on the node
+first, and `exam5restore` puts everything back and waits for `Ready`. There is
+deliberately no `drain` task: draining would evict the pods tasks 5–8 are graded
+on, so a full `grade5` afterwards would fail work you had already done correctly.
+Cordon-versus-drain is covered in task 3's walkthrough instead.
+
 **Order matters.** In exam 2, task 1 registers the repo that tasks 2, 3, 5, 8
 and 10 install from, and task 13 destroys what task 11 asks you to find. In
 exam 3, task 1 feeds 2 and 3, task 6 creates the namespace 7 and 8 use, and
 task 9 must be done before 13. In exam 4, task 1's default-deny is what makes
 tasks 2, 3 and 4 mean anything, and task 13 asks you to inventory policies you
-created earlier — so leave it for last. `exam2help`, `exam3help` and `exam4help`
-spell out the dependencies. Exam 1 has one such pair: read task 8 before you run
-task 7.
+created earlier — so leave it for last. In exam 5, nothing else can pass until
+task 1 brings the node back, tasks 3 and 4 must both be done before task 5 can
+schedule anything, and task 12's pod count moves as tasks 6–8 place pods, so
+answer it last. `exam2help` … `exam5help` spell out the dependencies. Exam 1 has
+one such pair: read task 8 before you run task 7.
 
 ## Showing it to someone else
 
@@ -259,8 +311,8 @@ which is also how the real exam's automated checks behave.
   SCORE: 74/100  (74%)   PASS
 ```
 
-`exam`, `exam2`, `exam3` and `exam4` show a ✔ next to tasks that already pass, so
-you can leave and come back.
+`exam` … `exam5` show a ✔ next to tasks that already pass, so you can leave and
+come back.
 
 ## How it works
 
@@ -313,6 +365,9 @@ resolve.
 ### Requirements
 
 - a real cluster and `kubectl` that can reach it (Killercoda, kind, minikube, k3s)
+- for exam 5 only: **two nodes**, passwordless `ssh` to the worker, and root
+  there. On a single-node cluster the only node is the control plane, and
+  breaking that is a different exam; `setup5.sh` refuses rather than trying.
 - `python3`, to serve the local chart repository (exams 1 and 2)
 - `bash` 3.2 or newer
 - Helm 3.10 or newer — installed automatically if absent
@@ -346,6 +401,16 @@ cluster with it. Re-seed: `examreset`, `exam2reset`, `exam3reset` or
 **Exam 4: my policies are all correct but nothing is ever blocked** — your CNI
 does not enforce NetworkPolicy. `netcheck` says so explicitly. Grading is
 unaffected; seeing traffic actually denied needs Calico or Cilium.
+
+**Exam 5: `setup5.sh` says it cannot ssh to the node** — it has to stop the
+kubelet and edit files there, which needs passwordless ssh and root. On
+Killercoda `ssh node01` works out of the box. If your worker has another name,
+set `CKA_NODE=<name>`.
+
+**Exam 5: I have wrecked the node and want out** — `exam5restore` copies the
+pristine `config.yaml` and `kubelet.conf` back from the node's backup directory,
+re-enables and restarts the kubelet, clears the taint and cordon, and waits for
+`Ready`.
 
 **Exam 4: a task scores zero and the YAML looks right** — for the policy tasks,
 `kubectl get netpol <name> -o yaml` and compare the *structure*, not the text.

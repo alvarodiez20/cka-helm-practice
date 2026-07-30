@@ -9,6 +9,56 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.3.0] — 2026-07-30
+
+Five exams, 65 tasks, 500 points.
+
+### Added
+
+- **Exam 5** (`setup5.sh`, `exam5.sh`) — 13 tasks, 100 points, on worker node
+  failure troubleshooting. Built from the failure modes the CKA actually uses,
+  which are well documented: kubelet stopped, a `clientCAFile` pointing at a
+  file that does not exist, and a kubeconfig aimed at port 6553 instead of 6443.
+  - **Task 1 carries all three of those faults at once, and they surface one at
+    a time.** `systemctl status` says `inactive (dead)`; start it and it says
+    `activating (auto-restart)`; fix the CA path and it says `active (running)`
+    while the node is *still* NotReady. Each fix reveals the next, which is
+    exactly how the exam's "the cluster is broken again" tasks behave. They
+    could not be separate tasks — the node stays NotReady until all three are
+    fixed — so it is one 14-point task with three discoveries.
+  - The rest: `is-active` versus `is-enabled`; cordon versus taint (two
+    independent gates, and clearing one does not clear the other); a
+    nodeSelector fixed by labelling the **node**; a static pod where
+    `staticPodPath` has been removed, so the manifest alone does nothing; a
+    DaemonSet that must tolerate the control-plane taint rather than have it
+    removed; requests versus allocatable; reading `FailedScheduling` events;
+    `.status.nodeInfo`; the kubelet's `clusterDNS` read on the node rather than
+    from the Service; `--field-selector spec.nodeName=`; and
+    `systemctl cat kubelet`, the command that unlocks all of the above.
+- **`nodeinfo`** — a dashboard that reads both sides at once: node conditions,
+  scheduling gates and pod count from the API server, then kubelet
+  active/enabled state, `staticPodPath`, `clientCAFile`, the kubeconfig's
+  server URL and the last kubelet errors over ssh.
+- **`exam5restore`** — copies the pristine `config.yaml` and `kubelet.conf` back
+  from a backup taken on the node before anything was broken, re-enables and
+  restarts the kubelet, clears the taint and cordon, and waits for `Ready`.
+- `EXAM=5` in `bootstrap.sh`, which now fetches all five exams.
+
+### Notes on scope
+
+- There is deliberately **no `drain` task**. Draining would evict the pods
+  tasks 5–8 are graded on, so a full `grade5` afterwards would fail work
+  already done correctly. Cordon-versus-drain is covered in task 3's
+  walkthrough instead.
+- `setup5.sh` refuses to run on a single-node cluster, where the only node is
+  the control plane, and refuses if it cannot ssh to the worker. It also
+  verifies that each of the four faults actually landed rather than trusting
+  `sed`.
+- Graders for the negative checks ("the taint is gone", "the node is not
+  cordoned") are gated on the node object being readable first. Without that
+  gate they passed trivially against no cluster at all, which was caught in
+  testing and would have awarded 22 points for an absent cluster.
+
 ## [1.2.1] — 2026-07-30
 
 ### Fixed
@@ -226,6 +276,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.3.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.3.0
 [1.2.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.1
 [1.2.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.0
 [1.1.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.1

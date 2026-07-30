@@ -17,6 +17,10 @@
 #
 #  Exam 4:  exam4     q4 4     grade4  grade4 4    netcheck
 #           exam4help explain4 4       solve4 4    exam4reset
+#
+#  Exam 5:  exam5     q5 4     grade5  grade5 4    nodeinfo
+#           exam5help explain5 4       solve5 4    exam5reset
+#           exam5restore  <- undoes the broken node
 # ============================================================
 
 # This file must be sourced, not executed: if you run it, the functions
@@ -65,6 +69,16 @@ netcheck()   { "$EXAM_HOME/exam4.sh" netcheck; }
 exam4help()  { "$EXAM_HOME/exam4.sh" help; }
 exam4reset() { "$EXAM_HOME/setup4.sh"; }
 
+exam5()        { "$EXAM_HOME/exam5.sh" "$@"; }
+q5()           { "$EXAM_HOME/exam5.sh" q "$@"; }
+grade5()       { "$EXAM_HOME/exam5.sh" grade "$@"; }
+solve5()       { "$EXAM_HOME/exam5.sh" solve "$@"; }
+explain5()     { "$EXAM_HOME/exam5.sh" explain "$@"; }
+nodeinfo()     { "$EXAM_HOME/exam5.sh" nodeinfo; }
+exam5restore() { "$EXAM_HOME/exam5.sh" restore; }
+exam5help()    { "$EXAM_HOME/exam5.sh" help; }
+exam5reset()   { "$EXAM_HOME/setup5.sh"; }
+
 # Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
@@ -75,4 +89,5 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q2 grade2 solve2 explain2
   complete -F _exam_qnums q3 grade3 solve3 explain3
   complete -F _exam_qnums q4 grade4 solve4 explain4
+  complete -F _exam_qnums q5 grade5 solve5 explain5
 fi
