@@ -9,6 +9,29 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.2.1] — 2026-07-30
+
+### Fixed
+
+Verified exam 4 end to end on a Killercoda CKA playground. The cluster runs
+**Cilium**, so NetworkPolicy is genuinely enforced there and the probe in
+`setup4.sh` correctly reported `ENFORCED`. Exam 4 scores 100/100 after these
+fixes, and all 13 tasks correctly read ✘ on a freshly seeded cluster.
+
+- `epcount` and `epport` crashed with `TypeError: 'NoneType' object is not
+  iterable`. A Service whose selector matches nothing still gets an
+  EndpointSlice — one with `"endpoints": null` — so `.get("endpoints", [])`
+  returns `None` rather than the default, which is exactly the state task 9
+  starts in. Every list access now uses `or []` and the helpers degrade to 0
+  instead of printing a traceback into the middle of `netcheck`.
+- `netcheck` now explains why the two `frontend/client` probes read *blocked*
+  once task 5 is solved. Both ends of a connection are evaluated
+  independently: task 5 denies egress for every pod in `frontend` except port
+  53, so client cannot open the connection even after task 8 fixes web's
+  ingress rule. Both policies are correct and both tasks score — but the
+  probe output looked like a failure, so it now says so explicitly, and task
+  8's walkthrough covers the interaction.
+
 ## [1.2.0] — 2026-07-30
 
 Four exams, 52 tasks, 400 points. The suite is no longer Helm-only.
@@ -203,6 +226,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.2.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.1
 [1.2.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.0
 [1.1.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.0

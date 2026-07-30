@@ -4,7 +4,7 @@
 
 **Four hands-on CKA exams — three on Helm, one on NetworkPolicy and network troubleshooting. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Tasks](https://img.shields.io/badge/tasks-52-orange?style=flat-square)](#the-four-exams)
 [![Points](https://img.shields.io/badge/points-400-orange?style=flat-square)](#scoring)
@@ -210,7 +210,18 @@ policy controller, will accept every policy object and silently block nothing �
 directly: it applies a deny-all and tries a real connection. It tells you the
 answer and records it, and `netcheck` repeats the warning. Grading reads the
 policy objects you wrote, so the exam still works either way — but if you want
-to *see* policies bite, use Calico or Cilium.
+to *see* policies bite, you need Calico or Cilium.
+
+Good news for the quick start: the **Killercoda CKA playground runs Cilium**, so
+policies are enforced there and `netcheck` is meaningful. Verified on
+Kubernetes v1.35.1.
+
+One result surprises everyone once. After you solve task 5, `netcheck` will show
+`frontend/client -> frontend/web` as **blocked** even though task 8 fixed web's
+ingress rule — because task 5 denies egress for every pod in `frontend` except
+port 53, and *both* ends of a connection have to allow it. Both policies are
+correct and both tasks score. `netcheck` points this out when it sees task 5 in
+place.
 
 **Order matters.** In exam 2, task 1 registers the repo that tasks 2, 3, 5, 8
 and 10 install from, and task 13 destroys what task 11 asks you to find. In

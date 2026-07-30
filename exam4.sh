@@ -545,6 +545,14 @@ WALK[8]="1. Read what the policy actually says, not what it was meant to say:
      kubectl -n frontend describe netpol allow-client-to-web
      kubectl -n frontend exec client -- wget -q -T3 -O- http://\$(kubectl -n frontend get pod web -o jsonpath='{.status.podIP}')
 
+   If you have already solved task 5, that fetch will STILL fail — and it is
+   supposed to. Task 5 denies egress for every pod in frontend except port
+   53, so client cannot make the outbound connection even though web now
+   accepts it. Both ends are evaluated independently: the source needs an
+   egress allow and the destination needs an ingress allow. Grading checks
+   this policy on its own, so task 8 scores either way; 'netcheck' says the
+   same thing when it notices task 5 is in place.
+
 Common traps: deleting the policy 'fixes' connectivity, because with no
 policy selecting web nothing is isolated — and it fails the task, which said
 to keep it. Deleting a policy to restore traffic is worth recognising as a
@@ -896,36 +904,41 @@ except Exception:
 
 # Endpoint count, via EndpointSlice (Endpoints is deprecated but still
 # present; slices are what modern kube-proxy consumes).
+# A Service whose selector matches nothing still gets an EndpointSlice — one
+# with "endpoints": null. So these fields exist but are None rather than
+# absent, and .get(k, []) hands back None. Every list access here therefore
+# uses 'or []', and the whole thing degrades to 0 rather than a traceback.
 epcount(){ # ns svc -> number of ready addresses
   kubectl -n "$1" get endpointslice -l "kubernetes.io/service-name=$2" -o json 2>/dev/null \
     | python3 -c '
 import json,sys
+n = 0
 try:
     d = json.load(sys.stdin)
+    for s in d.get("items") or []:
+        for ep in s.get("endpoints") or []:
+            if (ep.get("conditions") or {}).get("ready", True):
+                n += len(ep.get("addresses") or [])
 except Exception:
-    print(0); sys.exit()
-n = 0
-for s in d.get("items", []):
-    for ep in s.get("endpoints", []):
-        c = ep.get("conditions", {})
-        if c.get("ready", True):
-            n += len(ep.get("addresses", []))
+    n = 0
 print(n)
 '
 }
 
-epport(){ # ns svc -> first port in the slice
+epport(){ # ns svc -> first port in the slice, empty if there is none
   kubectl -n "$1" get endpointslice -l "kubernetes.io/service-name=$2" -o json 2>/dev/null \
     | python3 -c '
 import json,sys
+out = ""
 try:
     d = json.load(sys.stdin)
+    for s in d.get("items") or []:
+        for p in s.get("ports") or []:
+            out = p.get("port", ""); break
+        if out != "": break
 except Exception:
-    print(""); sys.exit()
-for s in d.get("items", []):
-    for p in s.get("ports", []):
-        print(p.get("port","")); sys.exit()
-print("")
+    out = ""
+print(out)
 '
 }
 
@@ -1090,6 +1103,18 @@ netcheck(){
   probe "frontend/client -> backend/api"  frontend client backend api
   probe "monitoring/prom -> backend/api"  monitoring prom  backend api
   probe "netdebug/tester -> backend/db"   netdebug tester  backend db
+
+  # Both ends of a connection are evaluated independently, and this catches
+  # everyone out at least once: task 5 denies egress for every pod in
+  # frontend, so once it is solved the two frontend/client probes read
+  # 'blocked' no matter how correct task 8's ingress rule is. That is the
+  # single most useful thing NetworkPolicy teaches, so say it rather than
+  # letting a correct answer look like a failure.
+  if kubectl -n frontend get netpol default-deny-egress >/dev/null 2>&1; then
+    printf "\n  %sNote:%s task 5's egress deny is in place, so frontend/client can only\n" "$Y" "$N"
+    printf "  reach port 53. Both directions must allow a connection — the two\n"
+    printf "  frontend/client probes above SHOULD read blocked, even with task 8 fixed.\n"
+  fi
 
   printf "\n  %sDNS:%s\n" "$BO" "$N"
   for spec in "frontend client" "shop dnsbroken"; do
