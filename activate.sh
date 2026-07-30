@@ -14,6 +14,9 @@
 #
 #  Exam 3:  exam3     q3 4     grade3  grade3 4
 #           exam3help explain3 4       solve3 4    exam3reset
+#
+#  Exam 4:  exam4     q4 4     grade4  grade4 4    netcheck
+#           exam4help explain4 4       solve4 4    exam4reset
 # ============================================================
 
 # This file must be sourced, not executed: if you run it, the functions
@@ -53,6 +56,15 @@ explain3()   { "$EXAM_HOME/exam3.sh" explain "$@"; }
 exam3help()  { "$EXAM_HOME/exam3.sh" help; }
 exam3reset() { "$EXAM_HOME/setup3.sh"; }
 
+exam4()      { "$EXAM_HOME/exam4.sh" "$@"; }
+q4()         { "$EXAM_HOME/exam4.sh" q "$@"; }
+grade4()     { "$EXAM_HOME/exam4.sh" grade "$@"; }
+solve4()     { "$EXAM_HOME/exam4.sh" solve "$@"; }
+explain4()   { "$EXAM_HOME/exam4.sh" explain "$@"; }
+netcheck()   { "$EXAM_HOME/exam4.sh" netcheck; }
+exam4help()  { "$EXAM_HOME/exam4.sh" help; }
+exam4reset() { "$EXAM_HOME/setup4.sh"; }
+
 # Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
@@ -62,4 +74,5 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q grade solve explain
   complete -F _exam_qnums q2 grade2 solve2 explain2
   complete -F _exam_qnums q3 grade3 solve3 explain3
+  complete -F _exam_qnums q4 grade4 solve4 explain4
 fi

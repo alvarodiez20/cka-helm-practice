@@ -9,6 +9,59 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.2.0] — 2026-07-30
+
+Four exams, 52 tasks, 400 points. The suite is no longer Helm-only.
+
+### Added
+
+- **Exam 4** (`setup4.sh`, `exam4.sh`) — 13 tasks, 100 points, on NetworkPolicy
+  and network troubleshooting. No Helm; pure `kubectl`. Eight policy-authoring
+  tasks and five troubleshooting ones:
+  - default-deny ingress, and the `policyTypes` trap that takes egress down with
+    it;
+  - a bare `podSelector` in `from` (same namespace) versus `namespaceSelector`,
+    including the fact that **NetworkPolicy cannot name a namespace** — it
+    matches labels, with `kubernetes.io/metadata.name` as the way round it;
+  - **the AND/OR trap**: one `from` element carrying both a `namespaceSelector`
+    and a `podSelector` means AND; two elements mean OR. They differ by a single
+    dash and the OR version allows vastly more traffic. This is the task the
+    exam is built around;
+  - default-deny egress that keeps DNS alive, on **both** UDP/53 and TCP/53 —
+    allowing only UDP leaves large responses hanging intermittently;
+  - `ipBlock` with `except`, and why `except` must sit inside `cidr`;
+  - port ranges with `endPort`;
+  - debugging a policy that applies cleanly and matches nothing, because a label
+    has a one-letter typo and selectors have no referential integrity;
+  - a Service with no endpoints (selector vs *pod* labels), a Service with
+    endpoints that refuses connections (`port` vs `targetPort`), a pod that
+    cannot resolve anything (`dnsPolicy: None`, and why it is immutable),
+    converting a Service to a fixed `NodePort`, and finally working out which
+    policies apply to a given pod — where a policy is excluded either because
+    its selector misses or because its direction is wrong.
+- **`netcheck`** — drives real traffic between the seeded pods and prints what
+  got through, plus DNS resolution and endpoint counts. Grading does not depend
+  on it; it is there so you can watch a policy take effect.
+- **CNI enforcement probing.** NetworkPolicy is only enforced if the CNI
+  implements it: plain Flannel accepts every policy object and blocks nothing,
+  so an exam that assumed enforcement would quietly teach the wrong thing.
+  `setup4.sh` does not guess from the CNI's name — it creates two pods, proves
+  they can talk, applies a deny-all, and retries. The verdict is recorded in
+  `~/exam4/enforcement`, reported at setup time, and repeated by `netcheck`.
+- `exam4`, `q4`, `grade4`, `explain4`, `solve4`, `netcheck`, `exam4help` and
+  `exam4reset` in `activate.sh`, with Tab completion.
+- `EXAM=4` in `bootstrap.sh`, which now fetches all four exams.
+
+### Changed
+
+- The policy graders parse JSON with `python3` instead of grepping, because the
+  distinctions that decide correctness are structural rather than textual — one
+  `from` element versus two cannot be seen with `grep`. Verified against
+  fixtures for every task plus eight deliberately-wrong variants, each confirmed
+  to score zero.
+- `README.md` is reframed around four exams rather than three Helm exams, and
+  documents the enforcement caveat prominently.
+
 ## [1.1.1] — 2026-07-30
 
 ### Fixed
@@ -150,6 +203,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.2.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.0
 [1.1.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.0
 [1.0.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.0.0
