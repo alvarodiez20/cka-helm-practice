@@ -2,24 +2,20 @@
 
 # cka-helm-practice
 
-**Nine hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
+**Nine hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader inspects the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.6.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.0-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Exams](https://img.shields.io/badge/exams-9-orange?style=flat-square)](#the-nine-exams)
 [![Tasks](https://img.shields.io/badge/tasks-117-orange?style=flat-square)](#the-nine-exams)
-[![Points](https://img.shields.io/badge/points-900-orange?style=flat-square)](#scoring)
 [![Pass mark](https://img.shields.io/badge/pass%20mark-66-brightgreen?style=flat-square)](#scoring)
 
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://www.cncf.io/training/certification/cka/)
 [![Helm](https://img.shields.io/badge/Helm-3.x%20%7C%204.x-0F1689?style=flat-square&logo=helm&logoColor=white)](https://helm.sh)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-CKA-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://www.cncf.io/training/certification/cka/)
 [![Bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?style=flat-square&logo=gnubash&logoColor=white)](#requirements)
 [![Killercoda](https://img.shields.io/badge/Killercoda-ready-1DB954?style=flat-square)](https://killercoda.com/playgrounds/scenario/cka)
-[![Offline](https://img.shields.io/badge/works-offline-lightgrey?style=flat-square)](#how-it-works)
 
-[![Last commit](https://img.shields.io/github/last-commit/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice/commits/main)
-[![Repo size](https://img.shields.io/github/repo-size/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice)
-
-[Quick start](#quick-start) · [Commands](#commands) · [The nine exams](#the-nine-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
+[Install](#install) · [How to use it](#how-to-use-it) · [The nine exams](#the-nine-exams) · [Requirements](#requirements) · [Troubleshooting](#troubleshooting)
 
 <!-- Recorded with demo/record-demo.sh on a Killercoda CKA playground
      (Kubernetes v1.35.1, Helm 4.1.1). See demo/README.md. -->
@@ -29,115 +25,199 @@
 
 ---
 
-These are not theory questions. Each task is something you do to a live cluster,
-and `grade` inspects the real state afterwards — release status, revision
-numbers, stored values, rendered manifests, whether a chart passes `helm lint`.
-Guessing does not score.
+## What this is
 
-Task statements are in **English**, like the real exam. Every task has an
-`explain` walkthrough that shows what to inspect first, what each flag does and
-why, how to verify, and the trap that usually costs the points.
+Nine independent exams, thirteen tasks each, one hundred points apiece. Every
+task is something you **do** to a live cluster. When you ask for a score, the
+grader inspects the cluster's real state — release revisions, stored value
+types, rendered manifests, endpoint addresses, certificate dates — and never
+compares your answer against a stored one.
 
-## Quick start
+That distinction matters more than it sounds. `--set image.tag=1.25` and
+`--set-string image.tag=1.25` produce identical-looking YAML and score
+differently, because one stores a number. A NetworkPolicy with two `from`
+elements instead of one applies cleanly and allows far more traffic than
+intended, and scores zero. Guessing does not work here.
+
+Every task also carries an `explain` walkthrough: what to inspect first, what
+each flag actually does, how to verify, and the specific mistake that usually
+costs the points.
+
+---
+
+## Install
 
 Open the [Killercoda CKA playground](https://killercoda.com/playgrounds/scenario/cka)
-— its Kubernetes version matches the exam — and paste:
+— its Kubernetes version tracks the exam — and run:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
+source ~/cka-helm-practice/activate.sh
 ```
 
-That downloads all nine exams and seeds exam 1. To seed a different one:
+That installs all nine exams and seeds the first one. New shells pick the
+commands up automatically via `~/.bashrc`.
+
+To seed a different exam at install time, set `EXAM`:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=2 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=3 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=4 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=5 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=6 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=7 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=8 bash
-curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=9 bash
+curl -sL .../bootstrap.sh | EXAM=7 bash      # storage
 ```
-
-**`EXAM=5` and `EXAM=6` deliberately break things.** Exam 5 stops the kubelet on
-a worker and corrupts its config; exam 6 takes `kube-scheduler` down. Both back
-up what they touch and both have a restore command (`exam5restore`,
-`exam6restore`), but do not point either at a cluster you care about.
 
 Or clone it:
 
 ```bash
 git clone https://github.com/alvarodiez20/cka-helm-practice.git
-cd cka-helm-practice && ./setup.sh
+cd cka-helm-practice && ./setup.sh && source ./activate.sh
 ```
 
-Then load the shell functions once — new shells pick them up automatically via
-`~/.bashrc`:
+---
+
+## How to use it
+
+### One command to remember
 
 ```bash
-source ~/cka-helm-practice/activate.sh
+cka
 ```
 
-## Commands
+That prints the dashboard: all nine exams, what each covers, and which one is
+currently selected.
 
-From any directory, once `activate.sh` is loaded:
+```
+  cka-helm-practice v1.7.0 — nine exams, 100 points each, pass mark 66
 
-| Exam 1 | Exam 2 | Exam 3 | Exam 4 | Exam 5 | Exam 6 | Exam 7 | Exam 8 | Exam 9 | What it does |
-|---|---|---|---|---|---|---|---|---|---|
-| `exam` | `exam2` | `exam3` | `exam4` | `exam5` | `exam6` | `exam7` | `exam8` | `exam9` | list every task with points and ✔/✘ status |
-| `q N` | `q2 N` | `q3 N` | `q4 N` | `q5 N` | `q6 N` | `q7 N` | `q8 N` | `q9 N` | show task N |
-| `grade` | `grade2` | `grade3` | `grade4` | `grade5` | `grade6` | `grade7` | `grade8` | `grade9` | grade everything, print the score out of 100 |
-| `grade N` | `grade2 N` | `grade3 N` | `grade4 N` | `grade5 N` | `grade6 N` | `grade7 N` | `grade8 N` | `grade9 N` | grade one task |
-| `explain N` | `explain2 N` | `explain3 N` | `explain4 N` | `explain5 N` | `explain6 N` | `explain7 N` | `explain8 N` | `explain9 N` | step-by-step walkthrough, with the reasoning |
-| `solve N` | `solve2 N` | `solve3 N` | `solve4 N` | `solve5 N` | `solve6 N` | `solve7 N` | `solve8 N` | `solve9 N` | just the commands, no explanation |
-| `examhelp` | `exam2help` | `exam3help` | `exam4help` | `exam5help` | `exam6help` | `exam7help` | `exam8help` | `exam9help` | full usage, including task ordering |
-| `examreset` | `exam2reset` | `exam3reset` | `exam4reset` | `exam5reset` | `exam6reset` | `exam7reset` | `exam8reset` | `exam9reset` | re-seed that exam from scratch |
+       NAME          TOPIC                                                SCORE
+  ▸ 1  helm-core     Helm: install, rollback, values, packaging           74/100
+    2  helm-values   Helm: repos, values files, --atomic, subcharts        0/100
+    3  helm-oci      Helm: real charts, CRDs, OCI registries               0/100
+    4  netpol        NetworkPolicy and network troubleshooting             0/100
+    ...
+```
 
-`q`, `grade`, `explain` and `solve` complete task numbers with **Tab**. Several
-exams add a command of their own:
+### Pick an exam, then work on it
 
-| Command | Exam | What it shows |
+```bash
+cka use storage        # select it — by name, or by number: cka use 7
+```
+
+From then on the verbs are **unnumbered** and act on whatever you selected:
+
+| Command | What it does |
+|---|---|
+| `list` | every task, with its points and a ✔ if it already passes |
+| `q 3` | show task 3 |
+| `next` | jump straight to the first unsolved task |
+| `grade` | grade everything and print the score out of 100 |
+| `grade 3` | grade one task |
+| `explain 3` | the full walkthrough, with the reasoning and the trap |
+| `solve 3` | just the commands, no explanation |
+| `info` | that exam's own dashboard — connectivity, node health, storage, whatever it has |
+| `reset` | re-seed this exam from scratch |
+
+A typical session looks like this:
+
+```bash
+cka use tshoot         # general troubleshooting
+next                   # what should I do first?
+# ... solve it against the cluster ...
+grade 1                # did it work?
+explain 1              # why didn't it?
+grade                  # where am I overall?
+```
+
+### Working across exams
+
+You do not have to select an exam to touch it. Put its name first:
+
+```bash
+cka storage q 3        # task 3 of the storage exam
+cka 7 grade            # the same exam, by number
+cka scores             # grade all nine and show every score (takes a minute)
+```
+
+**Tab completion** works on exam names, verbs and task numbers.
+
+### The names
+
+| # | Name | Covers |
 |---|---|---|
-| `netcheck` | 4 | drives real traffic between the seeded pods |
-| `nodeinfo` | 5 | node health from both the API server and the node, over ssh |
-| `triage` | 6 | every unhealthy object on one screen |
-| `storeinfo` | 7 | every PV, PVC and StorageClass, and why a claim is Pending |
-| `cplaneinfo` | 8 | manifests, etcd flags, certificate expiry, nodes |
-| `workinfo` | 9 | deployments, jobs, HPAs, PDBs and pods in one screen |
+| 1 | `helm-core` | Helm: install, rollback, values, packaging |
+| 2 | `helm-values` | Helm: repos, values files, `--atomic`, subcharts |
+| 3 | `helm-oci` | Helm: real charts, CRDs, OCI registries |
+| 4 | `netpol` | NetworkPolicy and network troubleshooting |
+| 5 | `nodes` | Worker node failures: kubelet, taints, static pods |
+| 6 | `tshoot` | General troubleshooting: control plane, pods, RBAC |
+| 7 | `storage` | Storage: PV, PVC, StorageClass, StatefulSet volumes |
+| 8 | `cluster` | etcd backup and restore, kubeadm, certificates |
+| 9 | `workloads` | Workloads and scheduling: rollouts, Jobs, affinity |
 
-Exams 5 and 6 also have **`exam5restore`** and **`exam6restore`**.
+> **Upgrading from an earlier version?** The old numbered commands — `exam6`,
+> `q6 4`, `grade7`, `explain3 2` — all still work exactly as before. Nothing
+> breaks mid-session; `cka` is simply a shorter way in.
 
-These are shell functions, not a REPL: `kubectl` and `helm` stay in the
-foreground, which is where the exam is actually solved. If you would rather not
-touch your shell, everything works through the scripts directly — `./exam.sh`,
-`./exam.sh q 4`, `./exam2.sh explain 8`, `./exam4.sh help`.
+### These are shell functions, not a REPL
+
+`kubectl` and `helm` stay in the foreground, which is where the exam is actually
+solved. If you would rather not touch your shell at all, every script works
+directly:
+
+```bash
+./exam7.sh q 3 · ./exam7.sh grade · ./cka.sh use storage
+```
+
+---
+
+## Scoring
+
+100 points per exam; **66 passes**, the real CKA mark. There is no partial
+credit within a task — it satisfies every condition or it scores zero, which is
+how the exam's own automated checks behave.
+
+```
+  SCORE: 74/100  (74%)   PASS
+```
+
+`list` shows a ✔ beside tasks that already pass, so you can leave and come back.
+Grading is idempotent and reads live state, so it is always current.
+
+---
 
 ## The nine exams
 
-They are independent, cover different ground, and can all be active on the same
-cluster at once — separate chart sources, namespaces and answer directories.
+They are independent and can all be active on the same cluster at once —
+separate namespaces, chart sources and answer directories.
 
-Exams 1 and 2 serve their charts from `localhost` and work with no internet.
-Exam 3 deliberately does not: it uses the real public charts the current CKA
-asks about, so it needs egress. Exams 4 to 8 need no Helm at all.
-
-Only two of them break anything. Exam 5 needs **two nodes and ssh to the
-worker**, because it breaks that node's kubelet on purpose; exam 6 breaks
-`kube-scheduler` — deliberately *not* the API server or etcd, which would take
-`kubectl` and the grader down too. Exam 8 must run **on the control plane node**,
-since etcd's certificates and the static pod manifests are local files, but it
-breaks nothing at all.
-
-Between them the nine cover every domain of the curriculum:
+**Coverage against the published curriculum:**
 
 | Domain | Weight | Exams |
 |---|---|---|
-| Troubleshooting | 30% | 4, 5, 6 |
-| Cluster Architecture & Installation | 25% | 1, 2, 3 (Helm), 8 (etcd, kubeadm, certs) |
-| Services & Networking | 20% | 4 |
-| Workloads & Scheduling | 15% | 9 |
-| Storage | 10% | 7 |
+| Troubleshooting | 30% | `netpol`, `nodes`, `tshoot` |
+| Cluster Architecture & Installation | 25% | `helm-core`, `helm-values`, `helm-oci`, `cluster` |
+| Services & Networking | 20% | `netpol` |
+| Workloads & Scheduling | 15% | `workloads` |
+| Storage | 10% | `storage` |
+
+**What each one needs:**
+
+| Exam | Internet | Notes |
+|---|---|---|
+| `helm-core`, `helm-values` | no | charts are served from `localhost` |
+| `helm-oci` | **yes** | real public repos and an OCI registry |
+| `netpol`, `tshoot`, `storage`, `workloads` | images only | plain `kubectl` |
+| `nodes` | images only | **two nodes + passwordless ssh to the worker** |
+| `cluster` | no | **must run on the control plane node** |
+
+> ### ⚠️ Two exams break your cluster on purpose
+>
+> `nodes` stops the kubelet on a worker and corrupts its configuration.
+> `tshoot` takes `kube-scheduler` down. Both back up every file they touch and
+> both have a restore command — `exam5restore` and `exam6restore` — but do not
+> point either at a cluster you care about.
+>
+> Neither breaks `kube-apiserver` or `etcd`: that would take `kubectl` down and
+> the grader with it. Where those failures matter, the walkthroughs cover what
+> you would do with `crictl` and `/var/log/pods` instead.
 
 ### Exam 1 — the core workflow
 
@@ -434,6 +514,29 @@ that is the rule working. And without metrics-server the HPA reports
 `<unknown>/70%` and never scales; that is a missing add-on, not a broken object,
 so task 6 is graded on the spec.
 
+### Task ordering
+
+Some tasks depend on others. Each exam's `examhelp` spells its own out; the
+short version:
+
+| Exam | Dependency |
+|---|---|
+| `helm-core` | read task 8 before running task 7 |
+| `helm-values` | task 1 registers the repo tasks 2, 3, 5, 8 and 10 need; task 13 destroys what 11 asks you to find |
+| `helm-oci` | 1 → 2, 3; task 6 creates the namespace 7 and 8 use; do 9 before 13 |
+| `netpol` | task 1's default-deny is what makes 2, 3 and 4 mean anything; leave 13 for last |
+| `nodes` | **task 1 first** — nothing else can pass while the node is NotReady; 3 and 4 before 5; 12 last |
+| `tshoot` | **task 1 first** — nothing new schedules while the scheduler is down; 5 before 10 |
+| `storage` | 1 → 6; 4 → 5 |
+| `cluster` | 1 → 2 → 3 is a chain; 8 → 9 are a pair |
+| `workloads` | 1 before 5; 13 last |
+
+`next` follows these automatically — it always hands you the lowest-numbered
+unsolved task.
+
+<details>
+<summary>The original wording, for reference</summary>
+
 **Order matters.** In exam 2, task 1 registers the repo that tasks 2, 3, 5, 8
 and 10 install from, and task 13 destroys what task 11 asks you to find. In
 exam 3, task 1 feeds 2 and 3, task 6 creates the namespace 7 and 8 use, and
@@ -451,6 +554,8 @@ task 13 goes last because tasks 7 and 8 change what is Pending. `exam2help` …
 `exam9help` spell out the dependencies. Exam 1 has one such pair: read task 8
 before you run task 7.
 
+</details>
+
 ## Showing it to someone else
 
 `demo/record-demo.sh` records a scripted terminal walkthrough with
@@ -467,19 +572,6 @@ EXAM=3 ./demo/record-demo.sh     # exam 3
 It types the commands itself, so the recording is reproducible.
 [demo/README.md](demo/README.md) compares the formats — GIF, SVG, asciinema
 embed, MP4, screenshots — and which ones survive being posted where.
-
-## Scoring
-
-100 points per exam, and **66 passes** — the real CKA pass mark. Partial credit
-does not exist per task: a task either satisfies every condition or scores zero,
-which is also how the real exam's automated checks behave.
-
-```
-  SCORE: 74/100  (74%)   PASS
-```
-
-`exam` … `exam9` show a ✔ next to tasks that already pass, so you can leave and
-come back.
 
 ## How it works
 
@@ -559,13 +651,15 @@ the solutions prefer them.
 
 ## Troubleshooting
 
+**`cka: command not found`** — the shell functions are not loaded. Run
+`source ~/cka-helm-practice/activate.sh`. New shells pick it up automatically.
+
 **`./exam.sh: No such file or directory`** — you are not in the repo directory.
 Either `cd ~/cka-helm-practice`, or load the functions and forget about
-directories: `source ~/cka-helm-practice/activate.sh`.
+directories.
 
 **Every task suddenly shows ✘** — the Killercoda session expired and took the
-cluster with it. Re-seed: `examreset`, `exam2reset`, `exam3reset` or
-`exam4reset`.
+cluster with it. Re-seed the selected exam with `reset`, or any of them with `cka <name> reset`.
 
 **Exam 4: my policies are all correct but nothing is ever blocked** — your CNI
 does not enforce NetworkPolicy. `netcheck` says so explicitly. Grading is

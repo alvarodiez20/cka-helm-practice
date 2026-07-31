@@ -9,6 +9,45 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.7.0] — 2026-07-30
+
+### Changed
+
+- **A single `cka` entry point replaces the numbered command names.** Nine exams
+  times eight verbs had grown to 72 shell functions, each with the exam number
+  baked into its name — `q6 6` meaning task 6 of exam 6, which reads as "six
+  six" and is exactly as confusing as it sounds.
+
+  Exams now have names rather than numbers, you select one, and the verbs are
+  unnumbered:
+
+      cka                    the dashboard — every exam, topic, and which is selected
+      cka scores             the same, plus your score in each
+      cka use storage        select, by name or number
+      q 3 · next · grade · explain 3 · solve 3 · info · reset
+
+  `next` is new and jumps straight to the first unsolved task, which removes the
+  "where was I?" problem entirely. `info` is an alias every exam answers to, so
+  you no longer have to remember whether this one's dashboard is called
+  `netcheck`, `nodeinfo`, `triage`, `storeinfo`, `cplaneinfo` or `workinfo`.
+
+  Any exam can also be addressed without selecting it: `cka storage q 3`.
+
+  **Nothing breaks.** Every numbered function — `exam6`, `q6 4`, `grade7`,
+  `explain3 2` — is still defined and behaves exactly as before, and the
+  unnumbered verbs default to exam 1 when nothing is selected, which is what
+  they always did. Selection lives in `~/.cka-current`.
+
+- Tab completion extended to exam names and dispatcher verbs.
+- `cka.sh` invokes each exam through `bash` rather than executing it directly,
+  so a script that has lost its executable bit still runs. That was not
+  hypothetical: an in-place `sed` while adding the `info` alias stripped `+x`
+  from two exams during this change.
+- **README rewritten.** Restructured around install → how to use it → the exams,
+  with the new interface documented first, a worked session, a coverage table
+  against the published domain weights, an explicit table of what each exam
+  requires, and a prominent warning about the two exams that break the cluster.
+
 ## [1.6.0] — 2026-07-30
 
 Nine exams, 117 tasks, 900 points. Every CKA domain now has a dedicated exam.
@@ -425,6 +464,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.7.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.7.0
 [1.6.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.6.0
 [1.5.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.5.0
 [1.4.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.4.0

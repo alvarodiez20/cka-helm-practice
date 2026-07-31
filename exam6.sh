@@ -967,7 +967,7 @@ case "${1:-list}" in
     printf "\n%s  ── Step by step ──%s\n\n%s\n\n" "$Y" "$N" "${WALK[$2]}"
     printf "%s  ── The commands, together ──%s\n\n%s\n\n" "$Y" "$N" "${SOL[$2]}"
     printf "  %scheck your work:  %s %s%s\n\n" "$D" "$CG" "$2" "$N" ;;
-  triage) triage ;;
+  triage|info) triage ;;
   restore)
     if [ -x "$EX6/restore.sh" ]; then bash "$EX6/restore.sh"
     else printf "\n  %sno restore script at %s/restore.sh — run setup6.sh first%s\n\n" "$R" "$EX6" "$N"; exit 1; fi ;;

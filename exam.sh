@@ -631,6 +631,9 @@ case "${1:-list}" in
     printf "%s  ── The commands, together ──%s\n\n%s\n\n" "$Y" "$N" "${SOL[$2]}"
     printf "  %scheck your work:  %sgrade %s%s\n\n" "$D" "$P" "$2" "$N" ;;
   reset) bash "$HERE/setup.sh" ;;
+  # 'info' exists on every exam so the cka dispatcher has one word for
+  # all of them; these three have no dashboard, so it lists the tasks.
+  info) exec "$0" list ;;
   help|-h|--help) usage ;;
   version|-v|--version) printf "cka-helm-practice %s (exam 1)\n" "$VERSION" ;;
   *)

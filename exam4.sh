@@ -1250,7 +1250,7 @@ case "${1:-list}" in
     printf "\n%s  ── Step by step ──%s\n\n%s\n\n" "$Y" "$N" "${WALK[$2]}"
     printf "%s  ── The commands, together ──%s\n\n%s\n\n" "$Y" "$N" "${SOL[$2]}"
     printf "  %scheck your work:  %s %s%s\n\n" "$D" "$CG" "$2" "$N" ;;
-  netcheck|check) netcheck ;;
+  netcheck|check|info) netcheck ;;
   reset) bash "$HERE/setup4.sh" ;;
   help|-h|--help) usage ;;
   version|-v|--version) printf "cka-helm-practice %s (exam 4)\n" "$VERSION" ;;

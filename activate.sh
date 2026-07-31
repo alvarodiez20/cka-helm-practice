@@ -6,34 +6,21 @@
 #
 #    source ~/cka-helm-practice/activate.sh
 #
-#  Exam 1:  exam      q 4      grade   grade 4
-#           examhelp  explain 4         solve 4     examreset
+#  THE SHORT VERSION
 #
-#  Exam 2:  exam2     q2 4     grade2  grade2 4
-#           exam2help explain2 4       solve2 4    exam2reset
+#    cka                  the dashboard — every exam, and which is selected
+#    cka use storage      select an exam by name (or number)
+#    q 3 · grade · explain 3 · next · info
 #
-#  Exam 3:  exam3     q3 4     grade3  grade3 4
-#           exam3help explain3 4       solve3 4    exam3reset
+#  The verbs are unnumbered and act on the SELECTED exam, so you never
+#  have to encode the exam into the command name.
 #
-#  Exam 4:  exam4     q4 4     grade4  grade4 4    netcheck
-#           exam4help explain4 4       solve4 4    exam4reset
+#  Names:  helm-core helm-values helm-oci netpol nodes
+#          tshoot storage cluster workloads
 #
-#  Exam 5:  exam5     q5 4     grade5  grade5 4    nodeinfo
-#           exam5help explain5 4       solve5 4    exam5reset
-#           exam5restore  <- undoes the broken node
+#  The old numbered commands (exam6, q6 4, grade7 ...) still work and are
+#  defined below, so nothing breaks mid-session.
 #
-#  Exam 6:  exam6     q6 4     grade6  grade6 4    triage
-#           exam6help explain6 4       solve6 4    exam6reset
-#           exam6restore  <- undoes the broken scheduler
-#
-#  Exam 7:  exam7     q7 4     grade7  grade7 4    storeinfo
-#           exam7help explain7 4       solve7 4    exam7reset
-#
-#  Exam 8:  exam8     q8 4     grade8  grade8 4    cplaneinfo
-#           exam8help explain8 4       solve8 4    exam8reset
-#
-#  Exam 9:  exam9     q9 4     grade9  grade9 4    workinfo
-#           exam9help explain9 4       solve9 4    exam9reset
 # ============================================================
 
 # This file must be sourced, not executed: if you run it, the functions
@@ -47,13 +34,23 @@ fi
 EXAM_HOME="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 export EXAM_HOME
 
+# ── the dispatcher, and the unnumbered verbs ────────────────
+# These act on whichever exam 'cka use' selected. With nothing selected the
+# default is exam 1, which is exactly what these commands did before — so
+# 'q 4' still means what it always meant.
+cka()        { "$EXAM_HOME/cka.sh" "$@"; }
+q()          { "$EXAM_HOME/cka.sh" q "$@"; }
+grade()      { "$EXAM_HOME/cka.sh" grade "$@"; }
+solve()      { "$EXAM_HOME/cka.sh" solve "$@"; }
+explain()    { "$EXAM_HOME/cka.sh" explain "$@"; }
+next()       { "$EXAM_HOME/cka.sh" next "$@"; }
+info()       { "$EXAM_HOME/cka.sh" info; }
+list()       { "$EXAM_HOME/cka.sh" list; }
+
+# ── the original per-exam commands, unchanged ───────────────
 # We invoke the scripts directly so their shebang (env bash) decides which
 # bash runs them, rather than whichever bash happens to be first in PATH.
 exam()       { "$EXAM_HOME/exam.sh" "$@"; }
-q()          { "$EXAM_HOME/exam.sh" q "$@"; }
-grade()      { "$EXAM_HOME/exam.sh" grade "$@"; }
-solve()      { "$EXAM_HOME/exam.sh" solve "$@"; }
-explain()    { "$EXAM_HOME/exam.sh" explain "$@"; }
 examhelp()   { "$EXAM_HOME/exam.sh" help; }
 examreset()  { "$EXAM_HOME/setup.sh"; }
 
@@ -144,4 +141,18 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q7 grade7 solve7 explain7
   complete -F _exam_qnums q8 grade8 solve8 explain8
   complete -F _exam_qnums q9 grade9 solve9 explain9
+
+  _cka_complete() {
+    local cur prev names verbs
+    cur="${COMP_WORDS[COMP_CWORD]}"; prev="${COMP_WORDS[COMP_CWORD-1]}"
+    names="helm-core helm-values helm-oci netpol nodes tshoot storage cluster workloads 1 2 3 4 5 6 7 8 9"
+    verbs="use scores list q next grade explain solve info reset examhelp help version"
+    case "$prev" in
+      use)  COMPREPLY=( $(compgen -W "$names" -- "$cur") ) ;;
+      cka)  COMPREPLY=( $(compgen -W "$verbs $names" -- "$cur") ) ;;
+      q|grade|explain|solve) COMPREPLY=( $(compgen -W "$(seq 1 13)" -- "$cur") ) ;;
+      *)    COMPREPLY=( $(compgen -W "$verbs" -- "$cur") ) ;;
+    esac
+  }
+  complete -F _cka_complete cka
 fi

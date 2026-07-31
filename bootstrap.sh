@@ -26,13 +26,15 @@ mkdir -p "$DEST" && cd "$DEST" || exit 1
 for f in setup.sh exam.sh setup2.sh exam2.sh setup3.sh exam3.sh \
          setup4.sh exam4.sh setup5.sh exam5.sh \
          setup6.sh exam6.sh setup7.sh exam7.sh \
-         setup8.sh exam8.sh setup9.sh exam9.sh activate.sh VERSION; do
+         setup8.sh exam8.sh setup9.sh exam9.sh \
+         cka.sh activate.sh VERSION; do
   curl -fsSL "${RAW}/${f}" -o "$f" \
     || { echo "  could not download ${f} from ${RAW}"; exit 1; }
 done
 chmod +x setup.sh exam.sh setup2.sh exam2.sh setup3.sh exam3.sh \
          setup4.sh exam4.sh setup5.sh exam5.sh setup6.sh exam6.sh \
-         setup7.sh exam7.sh setup8.sh exam8.sh setup9.sh exam9.sh activate.sh
+         setup7.sh exam7.sh setup8.sh exam8.sh setup9.sh exam9.sh \
+         cka.sh activate.sh
 
 case "$EXAM" in
   2) exec ./setup2.sh ;;
