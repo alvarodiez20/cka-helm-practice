@@ -2,12 +2,12 @@
 
 # cka-helm-practice
 
-**Eight hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
+**Nine hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader checks the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.5.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.0-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Tasks](https://img.shields.io/badge/tasks-104-orange?style=flat-square)](#the-eight-exams)
-[![Points](https://img.shields.io/badge/points-800-orange?style=flat-square)](#scoring)
+[![Tasks](https://img.shields.io/badge/tasks-117-orange?style=flat-square)](#the-nine-exams)
+[![Points](https://img.shields.io/badge/points-900-orange?style=flat-square)](#scoring)
 [![Pass mark](https://img.shields.io/badge/pass%20mark-66-brightgreen?style=flat-square)](#scoring)
 
 [![Helm](https://img.shields.io/badge/Helm-3.x%20%7C%204.x-0F1689?style=flat-square&logo=helm&logoColor=white)](https://helm.sh)
@@ -19,7 +19,7 @@
 [![Last commit](https://img.shields.io/github/last-commit/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice/commits/main)
 [![Repo size](https://img.shields.io/github/repo-size/alvarodiez20/cka-helm-practice?style=flat-square)](https://github.com/alvarodiez20/cka-helm-practice)
 
-[Quick start](#quick-start) · [Commands](#commands) · [The eight exams](#the-eight-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
+[Quick start](#quick-start) · [Commands](#commands) · [The nine exams](#the-nine-exams) · [Scoring](#scoring) · [Troubleshooting](#troubleshooting)
 
 <!-- Recorded with demo/record-demo.sh on a Killercoda CKA playground
      (Kubernetes v1.35.1, Helm 4.1.1). See demo/README.md. -->
@@ -47,7 +47,7 @@ Open the [Killercoda CKA playground](https://killercoda.com/playgrounds/scenario
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 ```
 
-That downloads all eight exams and seeds exam 1. To seed a different one:
+That downloads all nine exams and seeds exam 1. To seed a different one:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=2 bash
@@ -57,6 +57,7 @@ curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/b
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=6 bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=7 bash
 curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=8 bash
+curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | EXAM=9 bash
 ```
 
 **`EXAM=5` and `EXAM=6` deliberately break things.** Exam 5 stops the kubelet on
@@ -82,16 +83,16 @@ source ~/cka-helm-practice/activate.sh
 
 From any directory, once `activate.sh` is loaded:
 
-| Exam 1 | Exam 2 | Exam 3 | Exam 4 | Exam 5 | Exam 6 | Exam 7 | Exam 8 | What it does |
-|---|---|---|---|---|---|---|---|---|
-| `exam` | `exam2` | `exam3` | `exam4` | `exam5` | `exam6` | `exam7` | `exam8` | list every task with points and ✔/✘ status |
-| `q N` | `q2 N` | `q3 N` | `q4 N` | `q5 N` | `q6 N` | `q7 N` | `q8 N` | show task N |
-| `grade` | `grade2` | `grade3` | `grade4` | `grade5` | `grade6` | `grade7` | `grade8` | grade everything, print the score out of 100 |
-| `grade N` | `grade2 N` | `grade3 N` | `grade4 N` | `grade5 N` | `grade6 N` | `grade7 N` | `grade8 N` | grade one task |
-| `explain N` | `explain2 N` | `explain3 N` | `explain4 N` | `explain5 N` | `explain6 N` | `explain7 N` | `explain8 N` | step-by-step walkthrough, with the reasoning |
-| `solve N` | `solve2 N` | `solve3 N` | `solve4 N` | `solve5 N` | `solve6 N` | `solve7 N` | `solve8 N` | just the commands, no explanation |
-| `examhelp` | `exam2help` | `exam3help` | `exam4help` | `exam5help` | `exam6help` | `exam7help` | `exam8help` | full usage, including task ordering |
-| `examreset` | `exam2reset` | `exam3reset` | `exam4reset` | `exam5reset` | `exam6reset` | `exam7reset` | `exam8reset` | re-seed that exam from scratch |
+| Exam 1 | Exam 2 | Exam 3 | Exam 4 | Exam 5 | Exam 6 | Exam 7 | Exam 8 | Exam 9 | What it does |
+|---|---|---|---|---|---|---|---|---|---|
+| `exam` | `exam2` | `exam3` | `exam4` | `exam5` | `exam6` | `exam7` | `exam8` | `exam9` | list every task with points and ✔/✘ status |
+| `q N` | `q2 N` | `q3 N` | `q4 N` | `q5 N` | `q6 N` | `q7 N` | `q8 N` | `q9 N` | show task N |
+| `grade` | `grade2` | `grade3` | `grade4` | `grade5` | `grade6` | `grade7` | `grade8` | `grade9` | grade everything, print the score out of 100 |
+| `grade N` | `grade2 N` | `grade3 N` | `grade4 N` | `grade5 N` | `grade6 N` | `grade7 N` | `grade8 N` | `grade9 N` | grade one task |
+| `explain N` | `explain2 N` | `explain3 N` | `explain4 N` | `explain5 N` | `explain6 N` | `explain7 N` | `explain8 N` | `explain9 N` | step-by-step walkthrough, with the reasoning |
+| `solve N` | `solve2 N` | `solve3 N` | `solve4 N` | `solve5 N` | `solve6 N` | `solve7 N` | `solve8 N` | `solve9 N` | just the commands, no explanation |
+| `examhelp` | `exam2help` | `exam3help` | `exam4help` | `exam5help` | `exam6help` | `exam7help` | `exam8help` | `exam9help` | full usage, including task ordering |
+| `examreset` | `exam2reset` | `exam3reset` | `exam4reset` | `exam5reset` | `exam6reset` | `exam7reset` | `exam8reset` | `exam9reset` | re-seed that exam from scratch |
 
 `q`, `grade`, `explain` and `solve` complete task numbers with **Tab**. Several
 exams add a command of their own:
@@ -103,6 +104,7 @@ exams add a command of their own:
 | `triage` | 6 | every unhealthy object on one screen |
 | `storeinfo` | 7 | every PV, PVC and StorageClass, and why a claim is Pending |
 | `cplaneinfo` | 8 | manifests, etcd flags, certificate expiry, nodes |
+| `workinfo` | 9 | deployments, jobs, HPAs, PDBs and pods in one screen |
 
 Exams 5 and 6 also have **`exam5restore`** and **`exam6restore`**.
 
@@ -111,7 +113,7 @@ foreground, which is where the exam is actually solved. If you would rather not
 touch your shell, everything works through the scripts directly — `./exam.sh`,
 `./exam.sh q 4`, `./exam2.sh explain 8`, `./exam4.sh help`.
 
-## The eight exams
+## The nine exams
 
 They are independent, cover different ground, and can all be active on the same
 cluster at once — separate chart sources, namespaces and answer directories.
@@ -127,14 +129,14 @@ worker**, because it breaks that node's kubelet on purpose; exam 6 breaks
 since etcd's certificates and the static pod manifests are local files, but it
 breaks nothing at all.
 
-Between them the eight cover every domain of the curriculum:
+Between them the nine cover every domain of the curriculum:
 
 | Domain | Weight | Exams |
 |---|---|---|
 | Troubleshooting | 30% | 4, 5, 6 |
 | Cluster Architecture & Installation | 25% | 1, 2, 3 (Helm), 8 (etcd, kubeadm, certs) |
 | Services & Networking | 20% | 4 |
-| Workloads & Scheduling | 15% | scattered through 5 and 6 |
+| Workloads & Scheduling | 15% | 9 |
 | Storage | 10% | 7 |
 
 ### Exam 1 — the core workflow
@@ -400,6 +402,38 @@ where evicting pods would have failed tasks that had already been graded; exam 8
 has no pod-based state, so the drain/uncordon pair is safe here. Task 8 is graded
 on the *eviction*, which survives the uncordon, so tasks 8 and 9 can both pass.
 
+### Exam 9 — workloads and scheduling
+
+Seeded by `setup9.sh`. The last domain to get an exam of its own. Nothing is
+broken except one deliberately-bad rollout.
+
+| # | Pts | Task | Key idea |
+|---|---|---|---|
+| 1 | 8 | Undo a rollout to a broken image | `rollout undo`, not `set image` |
+| 2 | 7 | Bound a rollout's disruption | `maxUnavailable` / `maxSurge` |
+| 3 | 8 | A Job with a fixed completion count | `completions`, `parallelism`, `backoffLimit` |
+| 4 | 8 | A suspended, non-overlapping CronJob | cron fields, `concurrencyPolicy` |
+| 5 | 7 | Which revision is it on | the `deployment.kubernetes.io/revision` annotation |
+| 6 | 8 | Autoscale on CPU | HPA needs requests *and* metrics-server |
+| 7 | 8 | Never two replicas on one node | `podAntiAffinity`, `topologyKey` |
+| 8 | 8 | Spread replicas evenly | `topologySpreadConstraints`, `maxSkew` |
+| 9 | 8 | A priority class, and use it | preemption, `globalDefault` |
+| 10 | 8 | Protect a Deployment from drains | PodDisruptionBudget |
+| 11 | 7 | Stop killing a slow-starting app | `startupProbe` vs a long `initialDelaySeconds` |
+| 12 | 7 | Scale, and cap the history | `revisionHistoryLimit` |
+| 13 | 8 | Which pods are not Running | phase is coarser than you think |
+
+Tasks 7 and 8 are deliberately paired, because the difference is the lesson:
+anti-affinity is **binary** (never together, so 3 replicas on 2 nodes leaves one
+Pending for ever), while a spread constraint **balances** (2/1 is fine). Almost
+everyone reaches for anti-affinity when they want the second thing.
+
+**Two things here look like failures and are not.** After task 7 one `api` pod
+goes Pending — a hard anti-affinity caps replicas at the number of nodes, and
+that is the rule working. And without metrics-server the HPA reports
+`<unknown>/70%` and never scales; that is a missing add-on, not a broken object,
+so task 6 is graded on the spec.
+
 **Order matters.** In exam 2, task 1 registers the repo that tasks 2, 3, 5, 8
 and 10 install from, and task 13 destroys what task 11 asks you to find. In
 exam 3, task 1 feeds 2 and 3, task 6 creates the namespace 7 and 8 use, and
@@ -411,8 +445,10 @@ schedule anything, and task 12's pod count moves as tasks 6–8 place pods, so
 answer it last. In exam 6, task 1 gates everything, and task 10 asks you to scale
 a Deployment that task 5 has to fix first. In exam 7, task 6's claim binds to the
 PV task 1 creates, and you cannot default a StorageClass that does not exist yet.
-In exam 8, tasks 1 → 2 → 3 are a chain, and 8 → 9 are a pair. `exam2help` …
-`exam8help` spell out the dependencies. Exam 1 has one such pair: read task 8
+In exam 8, tasks 1 → 2 → 3 are a chain, and 8 → 9 are a pair. In exam 9, task 1
+must come before task 5 (the revision you report depends on the rollback), and
+task 13 goes last because tasks 7 and 8 change what is Pending. `exam2help` …
+`exam9help` spell out the dependencies. Exam 1 has one such pair: read task 8
 before you run task 7.
 
 ## Showing it to someone else
@@ -442,7 +478,7 @@ which is also how the real exam's automated checks behave.
   SCORE: 74/100  (74%)   PASS
 ```
 
-`exam` … `exam8` show a ✔ next to tasks that already pass, so you can leave and
+`exam` … `exam9` show a ✔ next to tasks that already pass, so you can leave and
 come back.
 
 ## How it works

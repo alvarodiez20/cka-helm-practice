@@ -31,6 +31,9 @@
 #
 #  Exam 8:  exam8     q8 4     grade8  grade8 4    cplaneinfo
 #           exam8help explain8 4       solve8 4    exam8reset
+#
+#  Exam 9:  exam9     q9 4     grade9  grade9 4    workinfo
+#           exam9help explain9 4       solve9 4    exam9reset
 # ============================================================
 
 # This file must be sourced, not executed: if you run it, the functions
@@ -117,6 +120,15 @@ cplaneinfo() { "$EXAM_HOME/exam8.sh" cplaneinfo; }
 exam8help()  { "$EXAM_HOME/exam8.sh" help; }
 exam8reset() { "$EXAM_HOME/setup8.sh"; }
 
+exam9()      { "$EXAM_HOME/exam9.sh" "$@"; }
+q9()         { "$EXAM_HOME/exam9.sh" q "$@"; }
+grade9()     { "$EXAM_HOME/exam9.sh" grade "$@"; }
+solve9()     { "$EXAM_HOME/exam9.sh" solve "$@"; }
+explain9()   { "$EXAM_HOME/exam9.sh" explain "$@"; }
+workinfo()   { "$EXAM_HOME/exam9.sh" workinfo; }
+exam9help()  { "$EXAM_HOME/exam9.sh" help; }
+exam9reset() { "$EXAM_HOME/setup9.sh"; }
+
 # Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
@@ -131,4 +143,5 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q6 grade6 solve6 explain6
   complete -F _exam_qnums q7 grade7 solve7 explain7
   complete -F _exam_qnums q8 grade8 solve8 explain8
+  complete -F _exam_qnums q9 grade9 solve9 explain9
 fi

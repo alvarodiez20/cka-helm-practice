@@ -9,6 +9,43 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.6.0] — 2026-07-30
+
+Nine exams, 117 tasks, 900 points. Every CKA domain now has a dedicated exam.
+
+### Added
+
+- **Exam 9** (`setup9.sh`, `exam9.sh`) — 13 tasks on **workloads and
+  scheduling**, a 15% domain that until now was only covered in passing by
+  exams 5 and 6.
+  - Rollouts: `rollout undo` against a deliberately broken image, and where the
+    history actually lives (old ReplicaSets, kept at zero replicas, which is why
+    `revisionHistoryLimit` decides whether you can roll back at all).
+  - `maxUnavailable` / `maxSurge`, including the combination the API rejects;
+    Jobs with `completions` / `parallelism` / `backoffLimit` and the
+    `restartPolicy` a Job will not start without; CronJobs, where `30 3 * * *`
+    versus `3 30 * * *` is a whole mark.
+  - **Tasks 7 and 8 are a deliberate pair.** Pod anti-affinity is binary — never
+    together, so three replicas on two nodes leaves one Pending for ever — while
+    a topology spread constraint with `maxSkew: 1` balances and allows 2/1.
+    Reaching for anti-affinity when you wanted spreading is the common error,
+    and the two tasks sit next to each other so the difference is unavoidable.
+  - HPAs and the two prerequisites people miss (CPU requests, and
+    metrics-server); PriorityClass and preemption; PodDisruptionBudgets, which
+    is the object that makes exam 8's `drain` hang; `startupProbe` and why it
+    beats a long `initialDelaySeconds`; and pod phase being coarser than it
+    looks — a CrashLoopBackOff pod is still phase `Running`.
+- `EXAM=9`, `workinfo`, and the usual `exam9`/`q9`/`grade9` family.
+
+### Fixed
+
+- Caught in testing before shipping: exam 9's task 1 grader was malformed and
+  ended on a comparison of two empty strings, so it awarded 8 points against no
+  cluster at all. It now requires both readings to be non-empty. That is the
+  fourth grader in this project to fail *open* rather than closed — the pattern
+  to watch for is any check whose last expression can be trivially true when
+  `kubectl` returns nothing.
+
 ## [1.5.0] — 2026-07-30
 
 Eight exams, 104 tasks, 800 points — every domain of the CKA curriculum now has
@@ -388,6 +425,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.6.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.6.0
 [1.5.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.5.0
 [1.4.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.4.0
 [1.3.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.3.0
