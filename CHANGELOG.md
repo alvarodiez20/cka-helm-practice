@@ -9,6 +9,66 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.5.0] — 2026-07-30
+
+Eight exams, 104 tasks, 800 points — every domain of the CKA curriculum now has
+an exam.
+
+### Added
+
+- **Exam 7** (`setup7.sh`, `exam7.sh`) — 13 tasks on **storage**, a 10% domain
+  the suite previously had one task on. Every volume is a static hostPath PV, so
+  it needs no dynamic provisioner and works on any cluster.
+  - **Task 3 is the centrepiece**: a `Retain` PV whose claim was deleted sits in
+    `Released` and will never rebind, however correct the next claim is, because
+    `.spec.claimRef` still names a claim that no longer exists. It looks fine at
+    a glance and behaves as though it is not.
+  - The rest: the five fields PVC binding compares (and a claim that fails on
+    capacity alone); StorageClass with `WaitForFirstConsumer` and
+    `allowVolumeExpansion`; making a class default, which is an annotation and
+    not a field; the full PV → PVC → `volumes` → `volumeMounts` chain;
+    JSONPath filtering; `emptyDir` shared between containers; a StatefulSet
+    with `volumeClaimTemplates` and its `<template>-<sts>-<ordinal>` naming;
+    `subPath` to drop one file into a directory without hiding the rest; and
+    `pvc-protection`.
+  - Task 12 is deliberately the mirror of exam 6's finalizer task: there the
+    controller was gone and you cleared the finalizer by hand, here the
+    protection is working correctly so you remove the reason and let the
+    controller clear it.
+- **Exam 8** (`setup8.sh`, `exam8.sh`) — 13 tasks on **etcd, kubeadm and
+  certificates**, the rest of the 25% Cluster Architecture domain. Breaks
+  nothing: every task is an operation you carry out.
+  - `etcdctl snapshot save` with mutual TLS, reading the flag values out of
+    etcd's own static pod manifest rather than guessing them; `snapshot status`
+    and why a revision of 0 means the backup silently failed; restore into a new
+    data directory; backing up the etcd PKI, because a snapshot without the
+    certificates restores into a cluster that fails TLS everywhere.
+  - `kubeadm certs check-expiration` (leaves last a year, CAs ten — which is why
+    an untouched cluster dies at the twelve-month mark), `certs renew`, and the
+    half people miss: the component must restart to pick the new certificate up.
+  - `kubeadm upgrade plan`, the one-minor-version-at-a-time rule, and
+    `token create --print-join-command`.
+  - Static pod manifests as files rather than API objects, and the API server's
+    `--advertise-address` — the flag that strands a migrated control plane.
+- **`storeinfo`** and **`cplaneinfo`** dashboards, and `EXAM=7` / `EXAM=8`.
+
+### Notes on scope
+
+- Task 3 of exam 8 restores into `/var/lib/etcd-restored` rather than cutting
+  over. A real restore replaces `/var/lib/etcd` with the API server stopped,
+  which would take `kubectl` down and the grader with it — the same constraint
+  that kept the API server out of exam 6. The walkthrough gives the full cutover.
+- **`drain` finally has a home.** It was kept out of exam 5 because evicting pods
+  would have failed already-graded tasks; exam 8 has no pod-based state, so the
+  drain/uncordon pair is safe. Task 8 is graded on the eviction, which survives
+  the uncordon, so 8 and 9 can both hold at once — an earlier draft graded task 8
+  on the cordon and made a full 100/100 impossible.
+- Testing also caught task 9 passing for free: "return the node to service" is
+  trivially true on a cluster where nothing was ever drained. It is now gated on
+  task 8 having actually happened.
+- Exam 8's paths are overridable (`CKA_E8_SNAP`, `CKA_E8_MANIFESTS`, …) so it
+  works on a non-standard layout and so the graders can be tested off-cluster.
+
 ## [1.4.0] — 2026-07-30
 
 Six exams, 78 tasks, 600 points.
@@ -328,6 +388,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.5.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.5.0
 [1.4.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.4.0
 [1.3.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.3.0
 [1.2.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.1

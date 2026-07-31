@@ -25,6 +25,12 @@
 #  Exam 6:  exam6     q6 4     grade6  grade6 4    triage
 #           exam6help explain6 4       solve6 4    exam6reset
 #           exam6restore  <- undoes the broken scheduler
+#
+#  Exam 7:  exam7     q7 4     grade7  grade7 4    storeinfo
+#           exam7help explain7 4       solve7 4    exam7reset
+#
+#  Exam 8:  exam8     q8 4     grade8  grade8 4    cplaneinfo
+#           exam8help explain8 4       solve8 4    exam8reset
 # ============================================================
 
 # This file must be sourced, not executed: if you run it, the functions
@@ -93,6 +99,24 @@ exam6restore() { "$EXAM_HOME/exam6.sh" restore; }
 exam6help()    { "$EXAM_HOME/exam6.sh" help; }
 exam6reset()   { "$EXAM_HOME/setup6.sh"; }
 
+exam7()      { "$EXAM_HOME/exam7.sh" "$@"; }
+q7()         { "$EXAM_HOME/exam7.sh" q "$@"; }
+grade7()     { "$EXAM_HOME/exam7.sh" grade "$@"; }
+solve7()     { "$EXAM_HOME/exam7.sh" solve "$@"; }
+explain7()   { "$EXAM_HOME/exam7.sh" explain "$@"; }
+storeinfo()  { "$EXAM_HOME/exam7.sh" storeinfo; }
+exam7help()  { "$EXAM_HOME/exam7.sh" help; }
+exam7reset() { "$EXAM_HOME/setup7.sh"; }
+
+exam8()      { "$EXAM_HOME/exam8.sh" "$@"; }
+q8()         { "$EXAM_HOME/exam8.sh" q "$@"; }
+grade8()     { "$EXAM_HOME/exam8.sh" grade "$@"; }
+solve8()     { "$EXAM_HOME/exam8.sh" solve "$@"; }
+explain8()   { "$EXAM_HOME/exam8.sh" explain "$@"; }
+cplaneinfo() { "$EXAM_HOME/exam8.sh" cplaneinfo; }
+exam8help()  { "$EXAM_HOME/exam8.sh" help; }
+exam8reset() { "$EXAM_HOME/setup8.sh"; }
+
 # Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
@@ -105,4 +129,6 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q4 grade4 solve4 explain4
   complete -F _exam_qnums q5 grade5 solve5 explain5
   complete -F _exam_qnums q6 grade6 solve6 explain6
+  complete -F _exam_qnums q7 grade7 solve7 explain7
+  complete -F _exam_qnums q8 grade8 solve8 explain8
 fi
