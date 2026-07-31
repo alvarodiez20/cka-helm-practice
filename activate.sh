@@ -21,6 +21,10 @@
 #  Exam 5:  exam5     q5 4     grade5  grade5 4    nodeinfo
 #           exam5help explain5 4       solve5 4    exam5reset
 #           exam5restore  <- undoes the broken node
+#
+#  Exam 6:  exam6     q6 4     grade6  grade6 4    triage
+#           exam6help explain6 4       solve6 4    exam6reset
+#           exam6restore  <- undoes the broken scheduler
 # ============================================================
 
 # This file must be sourced, not executed: if you run it, the functions
@@ -79,6 +83,16 @@ exam5restore() { "$EXAM_HOME/exam5.sh" restore; }
 exam5help()    { "$EXAM_HOME/exam5.sh" help; }
 exam5reset()   { "$EXAM_HOME/setup5.sh"; }
 
+exam6()        { "$EXAM_HOME/exam6.sh" "$@"; }
+q6()           { "$EXAM_HOME/exam6.sh" q "$@"; }
+grade6()       { "$EXAM_HOME/exam6.sh" grade "$@"; }
+solve6()       { "$EXAM_HOME/exam6.sh" solve "$@"; }
+explain6()     { "$EXAM_HOME/exam6.sh" explain "$@"; }
+triage()       { "$EXAM_HOME/exam6.sh" triage; }
+exam6restore() { "$EXAM_HOME/exam6.sh" restore; }
+exam6help()    { "$EXAM_HOME/exam6.sh" help; }
+exam6reset()   { "$EXAM_HOME/setup6.sh"; }
+
 # Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
@@ -90,4 +104,5 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q3 grade3 solve3 explain3
   complete -F _exam_qnums q4 grade4 solve4 explain4
   complete -F _exam_qnums q5 grade5 solve5 explain5
+  complete -F _exam_qnums q6 grade6 solve6 explain6
 fi

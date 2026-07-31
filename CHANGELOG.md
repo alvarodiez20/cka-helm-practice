@@ -9,6 +9,58 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.4.0] — 2026-07-30
+
+Six exams, 78 tasks, 600 points.
+
+### Added
+
+- **Exam 6** (`setup6.sh`, `exam6.sh`) — 13 tasks, 100 points, on general
+  cluster troubleshooting. Troubleshooting is 30% of the CKA, the
+  highest-weighted domain; exam 4 covers networking and exam 5 covers worker
+  nodes, so this one takes the control plane, the pod lifecycle, RBAC, storage,
+  admission and events.
+  - **Task 1 breaks `kube-scheduler`** by pointing its static pod manifest at a
+    kubeconfig that does not exist, and turns on a distinction worth carrying
+    into the exam: `Pending` *with* events means the scheduler looked at your
+    pod and refused it; `Pending` with **no events at all** means nobody looked,
+    because there is no scheduler running to produce one. It is graded on a
+    canary pod actually getting a node, not on the scheduler pod looking healthy.
+  - Pod lifecycle: `OOMKilled` and exit code 137 (with the 128+signal table);
+    reading a dead container with `logs --previous`; `ImagePullBackOff`;
+    `CreateContainerConfigError` from a missing ConfigMap; a liveness probe
+    aimed at a port nothing listens on, which restarts a perfectly healthy app;
+    and an init container that blocks the pod at `Init:0/1` where plain
+    `kubectl logs` tells you nothing.
+  - RBAC via `kubectl auth can-i --as=system:serviceaccount:<ns>:<name>`, graded
+    by asking the API server rather than re-deriving the rules — and checking
+    the permission is absent for other verbs and other namespaces, since the
+    task says "and nothing else anywhere".
+  - A PVC that will not bind on `storageClassName`, and the difference between
+    "no persistent volumes available" and "storageclass not found".
+  - A ResourceQuota refusing pods **at admission**, so the pods never exist at
+    all — the events are on the ReplicaSet, not on any pod. This is a different
+    shape from a Pending pod and is regularly misread.
+  - `--sort-by` on a JSONPath, event field selectors, and a finalizer-wedged
+    object that survives `delete`.
+- **`triage`** — every unhealthy object on one screen: control-plane pod states,
+  anything not Running in the exam namespace, the unscheduled canary, PVC bind
+  status, and the most recent Warning events.
+- **`exam6restore`** — restores the scheduler manifest from its backup, waits for
+  the component to come back, clears the finalizer and removes the exam objects.
+- `EXAM=6` in `bootstrap.sh`, which now fetches all six exams.
+
+### Notes on scope
+
+- `setup6.sh` deliberately does **not** break `kube-apiserver` or `etcd`.
+  Breaking either takes `kubectl` down and the grader with it, so the exam stops
+  at the scheduler — which is safe, because the API server keeps serving.
+  Task 1's walkthrough covers what you would do with `crictl` and
+  `/var/log/pods` if the API server itself were gone.
+- The broken workloads are created and allowed to reach their broken states
+  *before* the scheduler is taken down, so they exhibit real symptoms rather
+  than all sitting Pending.
+
 ## [1.3.0] — 2026-07-30
 
 Five exams, 65 tasks, 500 points.
@@ -276,6 +328,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.4.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.4.0
 [1.3.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.3.0
 [1.2.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.1
 [1.2.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.0
