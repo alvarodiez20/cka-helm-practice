@@ -107,4 +107,5 @@ fi
 
 echo
 printf "%s  Done.%s  %s\n\n" "$G$BO" "$N" "$SRC_LINE"
-printf "    exam9 · q9 1 · grade9 · explain9 1 · workinfo\n\n"
+printf "    %scka use workloads%s   %s# select this exam%s\n" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s\n\n" "$BO" "$N" "$D" "$N"

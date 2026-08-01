@@ -512,9 +512,10 @@ scheduling at all — only requests do."
 
 # ─────────────────────────── 9 ───────────────────────────
 Q[9]="Write into ${ANS}/q9.txt the single line from the scheduler's own
-event for the Pending 'greedy' pod that states why it could not be placed —
-before you fix it. If you have already fixed it, the phrase to record is the
-reason it gave.
+event for the Pending 'greedy' pod that states why it could not be placed.
+
+DO THIS BEFORE TASK 8. Fixing the pod removes the event, and events expire
+after an hour — once it is gone the reason cannot be read back off the cluster.
 The file must contain the words 'Insufficient cpu'."
 PTS[9]=6
 SOL[9]="kubectl -n node-lab describe pod -l app=greedy | grep -i insufficient \\
@@ -554,7 +555,14 @@ WALK[9]="1. Two places carry scheduling failures, and knowing both is the point:
    have helped either.
 
 Common traps: writing the whole describe output to the file. The task asks
-for the line that states the reason."
+for the line that states the reason.
+
+And the ordering one: if you fixed task 8 first, this event is gone. The pod
+is Running, there is nothing Pending, and describe shows you nothing. You can
+still answer from what you know — the phrase is 'Insufficient cpu' — but the
+habit worth building is to CAPTURE THE EVIDENCE BEFORE YOU FIX. On the real
+exam, and in a real incident, the diagnosis disappears the moment you repair
+the symptom."
 
 # ─────────────────────────── 10 ───────────────────────────
 Q[10]="Write into ${ANS}/q10.txt the container runtime and the kubelet
@@ -946,6 +954,8 @@ usage(){
   printf "    It needs passwordless ssh to %s and root there. Killercoda has both.\n\n" "$NODE"
   printf "%s  ORDER MATTERS%s\n\n" "$BO" "$N"
   printf "    1 first        nothing else can pass while the node is NotReady\n"
+  printf "    9 BEFORE 8      task 8 fixes the pod, which deletes the very event\n"
+  printf "                    task 9 asks you to read\n"
   printf "    3 and 4 → 5    a label cannot help while the node is cordoned or tainted\n"
   printf "    1 → 6          the kubelet has to be running to read a static pod manifest\n"
   printf "    12 last        the pod count changes as tasks 6, 7 and 8 place pods\n\n"

@@ -301,7 +301,10 @@ Common traps: 'tar -cf backup.tar /etc/kubernetes/pki/etcd' works but warns
 to a relative path anyway. Use -C."
 
 Q[6]="Write into ${ANS}/q6.txt the NAME of the certificate that expires soonest,
-exactly as kubeadm lists it in the leftmost column of its expiration report."
+exactly as kubeadm lists it in the leftmost column of its expiration report.
+kubeadm issues the leaf certificates together, so several usually share the
+earliest date — any one of those is accepted. Certificate AUTHORITIES do not
+count."
 PTS[6]=8
 SOL[6]="kubeadm certs check-expiration
 # read the CERTIFICATE column with the smallest RESIDUAL TIME
@@ -742,11 +745,46 @@ check(){
        && [ "$(filetrim "$ANS/q4.txt")" \
             = "$(manifestflag ${MANIFESTS}/etcd.yaml data-dir)" ] ;;
     5) [ -s "$PKITAR" ] && tar -tf "$PKITAR" 2>/dev/null | grep -q 'etcd/ca\.crt$' ;;
-    6) [ -n "$(filetrim "$ANS/q6.txt")" ] \
-       && have kubeadm \
-       && kubeadm certs check-expiration 2>/dev/null \
-          | awk 'NR>1 && $1!~/^CERTIFICATE/ {print $1}' \
-          | grep -qx "$(filetrim "$ANS/q6.txt")" ;;
+    # Accepts any certificate that actually shares the EARLIEST expiry, not
+    # merely any name kubeadm prints — an earlier version took the latter and
+    # would have marked any certificate correct. kubeadm issues the leaves
+    # together, so several legitimately tie; all of them are accepted, and the
+    # CA table at the bottom is excluded because CAs last ten years.
+    6) [ -n "$(filetrim "$ANS/q6.txt")" ] && have kubeadm \
+       && kubeadm certs check-expiration 2>/dev/null | python3 -c '
+import sys, datetime, re
+answer = sys.argv[1]
+best, names, seen = None, [], set()
+for line in sys.stdin:
+    # the CA table starts here; everything after it is a 10-year CA
+    if line.startswith("CERTIFICATE AUTHORITY"):
+        break
+    tok = line.split()
+    if tok and tok[0].upper() not in ("CERTIFICATE",):
+        seen.add(tok[0])
+    m = re.match(r"^(\S+)\s+(\w{3} \d{1,2}, \d{4} \d{2}:\d{2} \w+)", line)
+    if not m:
+        continue
+    name, when = m.group(1), m.group(2)
+    if name.upper() == "CERTIFICATE":
+        continue
+    seen.add(name)
+    try:
+        d = datetime.datetime.strptime(when[:-4].strip(), "%b %d, %Y %H:%M")
+    except ValueError:
+        continue
+    if best is None or d < best:
+        best, names = d, [name]
+    elif d == best:
+        names.append(name)
+if best is None:
+    # kubeadm printed something this parser does not recognise — a format
+    # change, a different locale. Degrade to the lenient check rather than
+    # making the task impossible: accept any certificate it listed.
+    sys.stdin.seek(0) if sys.stdin.seekable() else None
+    sys.exit(0 if answer in seen else 1)
+sys.exit(0 if answer in names else 1)
+' "$(filetrim "$ANS/q6.txt")" ;;
     # Renewed means issued recently — check notBefore is within 24h.
     7) [ -f "$PKIDIR/apiserver-kubelet-client.crt" ] \
        && python3 - "$PKIDIR/apiserver-kubelet-client.crt" <<'PY'

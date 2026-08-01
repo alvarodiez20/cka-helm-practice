@@ -154,5 +154,6 @@ fi
 echo
 printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
-printf "    exam8 · q8 1 · grade8 · explain8 1 · cplaneinfo\n\n"
+printf "    %scka use cluster%s   %s# select this exam%s\n" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s\n\n" "$BO" "$N" "$D" "$N"
 printf "  %sTasks 8 and 9 are a pair: drain, then uncordon. Do them together.%s\n\n" "$D" "$N"

@@ -9,7 +9,7 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
-## [1.8.0] — 2026-07-30
+## [1.8.1] — 2026-07-30
 
 Verified exams 5 to 9 on a live Killercoda cluster (Kubernetes v1.35.1, Cilium,
 etcd 3.6.8, kubeadm v1.35.1). Exams 5, 6 and 7 reach 100/100; 8 and 9 did not,
@@ -47,15 +47,27 @@ and the reasons were all real.
   looked are forgiven.
 - `setup9.sh` printed `Done.  source source /root/...`.
 
-### Known, not yet fixed
+### Also fixed
 
-- `bootstrap.sh` is all-or-nothing: one 404 aborts the whole install. A CDN lag
-  right after a push produced exactly that during this run.
-- Exam 5 task 9 asks for the scheduler's rejection reason, which task 8 removes
-  by fixing the pod. The task text allows for it, but the ordering is not
-  documented — do 9 before 8.
-- Exam 8 task 6 accepts any certificate name `kubeadm` lists, not specifically
-  the soonest-expiring one.
+- **`bootstrap.sh` is no longer all-or-nothing.** A single 404 used to abort the
+  entire install and leave a half-populated directory with no working exams —
+  which is exactly what a CDN lag right after a push produced during this run.
+  It now downloads what it can, reports what it could not, and fails only if the
+  exam you actually asked for is missing.
+- **Exam 5: task 9 must come before task 8**, because task 8 fixes the pod and
+  deletes the very event task 9 asks you to read. The task statement now says so
+  in capitals, the help lists the dependency, and the walkthrough turns it into
+  the lesson it should have been: capture the evidence before you repair the
+  symptom, because in a real incident the diagnosis disappears with the fault.
+- **Exam 8 task 6 now verifies "soonest".** It previously accepted any
+  certificate `kubeadm` listed, so any answer scored. It now parses the expiry
+  dates, accepts only certificates sharing the earliest one — several
+  legitimately tie, since kubeadm issues the leaves together — and excludes the
+  CA table, whose entries last ten years. If the output format is ever something
+  the parser does not recognise it degrades to the old lenient behaviour rather
+  than making the task impossible.
+- The last two `setupN.sh` closing messages still advertised `q8 1` / `q9 1`;
+  all nine now teach `cka use <name>`.
 
 ## [1.7.0] — 2026-07-30
 
@@ -512,6 +524,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.8.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.1
 [1.8.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.0
 [1.7.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.7.0
 [1.6.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.6.0
