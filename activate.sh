@@ -46,12 +46,13 @@ explain()    { "$EXAM_HOME/cka.sh" explain "$@"; }
 next()       { "$EXAM_HOME/cka.sh" next "$@"; }
 info()       { "$EXAM_HOME/cka.sh" info; }
 list()       { "$EXAM_HOME/cka.sh" list; }
+examhelp()   { "$EXAM_HOME/cka.sh" examhelp; }
+reset()      { "$EXAM_HOME/cka.sh" reset; }
 
 # ── the original per-exam commands, unchanged ───────────────
 # We invoke the scripts directly so their shebang (env bash) decides which
 # bash runs them, rather than whichever bash happens to be first in PATH.
 exam()       { "$EXAM_HOME/exam.sh" "$@"; }
-examhelp()   { "$EXAM_HOME/exam.sh" help; }
 examreset()  { "$EXAM_HOME/setup.sh"; }
 
 exam2()      { "$EXAM_HOME/exam2.sh" "$@"; }

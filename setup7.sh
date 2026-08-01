@@ -34,11 +34,12 @@ mkdir -p "$ANS" "$EX7"
 # ── Clean slate ─────────────────────────────────────────────
 kubectl delete ns "$NS" --ignore-not-found --wait=false >/dev/null 2>&1
 for i in $(seq 1 25); do kubectl get ns "$NS" >/dev/null 2>&1 || break; sleep 2; done
-for pv in pv-small pv-recycled pv-sts-0 pv-sts-1; do
+for pv in pv-small pv-recycled pv-sts-0 pv-sts-1 pv-inuse pv-logs; do
   kubectl patch pv "$pv" --type=merge -p '{"metadata":{"finalizers":null}}' >/dev/null 2>&1
   kubectl delete pv "$pv" --ignore-not-found --wait=false >/dev/null 2>&1
 done
 kubectl delete storageclass slow-local fast-local --ignore-not-found >/dev/null 2>&1
+kubectl -n "$NS" delete pvc --all --wait=false >/dev/null 2>&1
 rm -rf "$ANS" "$EX7"; mkdir -p "$ANS" "$EX7"
 sleep 3
 kubectl create ns "$NS" >/dev/null 2>&1
@@ -129,13 +130,20 @@ kubectl -n "$NS" create configmap site-config \
   --from-literal=notes.txt='not mounted' >/dev/null 2>&1
 
 # ── Task 13: a PVC held open by a running pod ───────────────
+# NOTE the storage class: 'inuse-local', not 'manual'. Sharing a class here
+# makes binding ambiguous, and a live run showed exactly what goes wrong —
+# this claim bound to pv-small (task 2's volume) instead of pv-inuse, because
+# both offered class 'manual' and the binder is free to choose. Deleting the
+# holder pod then left pv-small Released, which made task 2 UNSOLVABLE: the
+# volume it names can never bind again. One class per purpose keeps it
+# deterministic.
 kubectl apply -f - >/dev/null 2>&1 <<EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata: {name: inuse, namespace: $NS}
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: manual
+  storageClassName: inuse-local
   resources: {requests: {storage: 1Gi}}
 ---
 apiVersion: v1
@@ -145,7 +153,7 @@ spec:
   capacity: {storage: 1Gi}
   accessModes: [ReadWriteOnce]
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual
+  storageClassName: inuse-local
   hostPath: {path: /mnt/pv-inuse}
 ---
 apiVersion: v1
@@ -173,11 +181,14 @@ Namespace: $NS
 
 What is here:
 
-  pv/pv-small       2Gi, RWO, class 'manual', Retain
+  pv/pv-small       2Gi, RWO, class 'manual', Retain — task 2's target
+  (task 1 asks you to create pv-logs, 3Gi, also class 'manual'; the 2Gi and
+   3Gi claims then bind to the exact-fit volume each, which is why the sizes
+   differ)
   pvc/too-big       asks for 5Gi of class 'manual'  -> will not bind (task 2)
   pv/pv-recycled    1Gi, class 'archive', Retain, left in Released (task 3)
   pv/pv-sts-0/-1    512Mi each, class 'sts-local'   (task 11)
-  pv/pv-inuse       1Gi, class 'manual', bound to pvc/inuse
+  pv/pv-inuse       1Gi, class 'inuse-local', bound to pvc/inuse
   pvc/inuse         deleted, but pod 'holder' still mounts it (task 13)
   cm/site-config    two keys: index.html and notes.txt (task 10)
 
@@ -206,6 +217,9 @@ fi
 echo
 printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
-printf "    exam7          %s# list the 13 tasks%s\n" "$D" "$N"
-printf "    q7 1 · grade7 · explain7 1 · storeinfo%s\n\n" "$D$N"
+printf "    %scka use storage%s   %s# select this exam%s
+" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s
+
+" "$BO" "$N" "$D" "$N"
 printf "  %sEverything here is static PVs, so no dynamic provisioner is needed.%s\n\n" "$D" "$N"

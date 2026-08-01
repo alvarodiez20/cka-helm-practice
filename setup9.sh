@@ -106,5 +106,5 @@ if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/d
 fi
 
 echo
-printf "%s  Done.%s  source %s\n\n" "$G$BO" "$N" "$SRC_LINE"
+printf "%s  Done.%s  %s\n\n" "$G$BO" "$N" "$SRC_LINE"
 printf "    exam9 · q9 1 · grade9 · explain9 1 · workinfo\n\n"

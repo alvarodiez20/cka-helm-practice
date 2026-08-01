@@ -26,7 +26,9 @@ if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
 if [ -n "${EXAM_HOME:-}" ]; then
-  CL="exam5"; CQ="q5"; CG="grade5"; CE="explain5"; CS="solve5"; CH="exam5help"
+  # activate.sh is loaded: the verbs are unnumbered and act on the exam
+  # selected with 'cka use'. See cka.sh.
+  CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
   CL="./exam5.sh"; CQ="./exam5.sh q"; CG="./exam5.sh grade"
   CE="./exam5.sh explain"; CS="./exam5.sh solve"; CH="./exam5.sh help"

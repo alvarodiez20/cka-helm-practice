@@ -301,11 +301,10 @@ echo
 printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
 printf "  Then, from any directory:\n\n"
-printf "    exam5          %s# list the 13 tasks of exam 5%s\n" "$D" "$N"
-printf "    q5 1           %s# read a task%s\n" "$D" "$N"
-printf "    grade5         %s# grade and see your score out of 100%s\n" "$D" "$N"
-printf "    explain5 1     %s# step-by-step walkthrough%s\n" "$D" "$N"
-printf "    exam5restore   %s# put the node back the way it was%s\n" "$D" "$N"
-printf "    exam5help      %s# full help, including task ordering%s\n\n" "$D" "$N"
+printf "    %scka use nodes%s   %s# select this exam%s
+" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s
+
+" "$BO" "$N" "$D" "$N"
 printf "  %sStart with 'kubectl get nodes' and 'ssh %s'.%s\n" "$D" "$NODE" "$N"
 printf "  %sIf the Killercoda session expires, run %s/setup5.sh again.%s\n\n" "$D" "$HERE" "$N"

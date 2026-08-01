@@ -17,7 +17,9 @@ if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
 if [ -n "${EXAM_HOME:-}" ]; then
-  CL="exam9"; CQ="q9"; CG="grade9"; CE="explain9"; CS="solve9"; CH="exam9help"
+  # activate.sh is loaded: the verbs are unnumbered and act on the exam
+  # selected with 'cka use'. See cka.sh.
+  CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
   CL="./exam9.sh"; CQ="./exam9.sh q"; CG="./exam9.sh grade"
   CE="./exam9.sh explain"; CS="./exam9.sh solve"; CH="./exam9.sh help"
@@ -749,12 +751,18 @@ check(){
     # Rolled back means: not the broken tag any more, AND the rollout has
     # actually completed. Both readings must be non-empty — comparing two
     # empty strings would otherwise pass against no cluster at all.
+    # Checks the ROLLBACK only. An earlier version also required
+    # readyReplicas == spec.replicas, which coupled this task to later ones:
+    # task 12 scales to 4 and task 8 adds a spread constraint, so replicas can
+    # be legitimately Pending and task 1 would go from correct to failed
+    # without the candidate touching it. At least one ready replica is enough
+    # to prove the rollback actually rolled out.
     1) nsok || return 1
        img="$(dp shop '.spec.template.spec.containers[0].image')"
        [ -n "$img" ] || return 1
        case "$img" in *9.99-broken*) return 1 ;; esac
-       rr="$(dp shop .status.readyReplicas)"; want="$(dp shop .spec.replicas)"
-       [ -n "$rr" ] && [ -n "$want" ] && [ "$rr" = "$want" ] ;;
+       rr="$(dp shop .status.readyReplicas)"
+       [ -n "$rr" ] && [ "$rr" -ge 1 ] 2>/dev/null ;;
     2) nsok && pyspec deploy api '
 d["spec"].get("strategy",{}).get("type")=="RollingUpdate"
 and str(d["spec"]["strategy"].get("rollingUpdate",{}).get("maxUnavailable"))=="1"
@@ -805,14 +813,21 @@ and ((d["spec"].get("selector") or {}).get("matchLabels") or {}).get("app")=="ap
     12) nsok && [ "$(dp shop .spec.replicas)" = "4" ] \
         && [ "$(dp shop .spec.revisionHistoryLimit)" = "3" ] ;;
     # Empty is a legitimate answer, so the file must EXIST and must match.
+    # Pods churn between capturing this and grading it, so an exact set match
+    # is a race — a live run failed here with 14 pods in flux. Every name you
+    # list must genuinely be a non-Running pod right now, and you must list at
+    # least one if any exist; extra pods that appeared after you looked are
+    # forgiven.
     13) nsok && [ -f "$ANS/q13.txt" ] && python3 -c '
 import subprocess,sys
-want=set(subprocess.run(["kubectl","-n",sys.argv[2],"get","pods",
+now=set(subprocess.run(["kubectl","-n",sys.argv[2],"get","pods",
   "--field-selector","status.phase!=Running","-o",
   "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}"],
   capture_output=True,text=True).stdout.split())
 got={l.strip() for l in open(sys.argv[1]) if l.strip()}
-sys.exit(0 if got==want else 1)
+if not now:
+    sys.exit(0 if not got else 1)
+sys.exit(0 if got and got <= now else 1)
 ' "$ANS/q13.txt" "$NS" ;;
     *) return 2 ;;
   esac

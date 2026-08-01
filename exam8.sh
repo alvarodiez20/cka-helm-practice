@@ -27,7 +27,9 @@ if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
 if [ -n "${EXAM_HOME:-}" ]; then
-  CL="exam8"; CQ="q8"; CG="grade8"; CE="explain8"; CS="solve8"; CH="exam8help"
+  # activate.sh is loaded: the verbs are unnumbered and act on the exam
+  # selected with 'cka use'. See cka.sh.
+  CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
   CL="./exam8.sh"; CQ="./exam8.sh q"; CG="./exam8.sh grade"
   CE="./exam8.sh explain"; CS="./exam8.sh solve"; CH="./exam8.sh help"
@@ -753,16 +755,23 @@ try:
     out=subprocess.run(["openssl","x509","-in",sys.argv[1],"-noout","-startdate"],
       capture_output=True,text=True).stdout.strip()
     d=datetime.datetime.strptime(out.split("=",1)[1].strip(),"%b %d %H:%M:%S %Y %Z")
-    age=(datetime.datetime.utcnow()-d).total_seconds()
+    # utcnow() is deprecated on Python 3.12 and prints a warning straight
+    # into the grader's output. Compare explicitly in UTC instead.
+    now=datetime.datetime.now(datetime.timezone.utc)
+    age=(now - d.replace(tzinfo=datetime.timezone.utc)).total_seconds()
     sys.exit(0 if 0 <= age <= 86400 else 1)
 except Exception:
     sys.exit(1)
 PY
        ;;
-    # Graded on the EVICTION, which persists, rather than on the cordon —
-    # task 9 deliberately clears the cordon, so requiring it here would make
-    # tasks 8 and 9 impossible to satisfy at the same time.
-    8) nodeexists \
+    # Tasks 8 and 9 undo each other by design. Grading the CORDON fails
+    # (task 9 clears it) and so does grading the EVICTION — a live run showed
+    # that once the node is uncordoned the evicted pods are rescheduled
+    # straight back onto it. So this check LATCHES: the first time the drained
+    # state is observed it records the fact, and the record is proof
+    # afterwards. Re-seeding with setup8.sh clears the marker.
+    8) if [ -f "$EX8/.drained" ]; then return 0; fi
+       nodeexists \
        && [ "$(kubectl get pods -A --field-selector "spec.nodeName=$NODE" \
               -o json 2>/dev/null | python3 -c '
 import json,sys
@@ -776,7 +785,9 @@ for p in d.get("items") or []:
     if (p.get("metadata") or {}).get("namespace")=="kube-system": continue
     n+=1
 print(n)
-')" = "0" ] ;;
+')" = "0" ] || return 1
+       # Latch it: see the comment above.
+       mkdir -p "$EX8" && : > "$EX8/.drained" ;;
     # 'Returned to service' only means something if it LEFT service first.
     # Without the task-8 precondition this passes for free on any cluster
     # where the node was never drained at all.

@@ -362,11 +362,10 @@ echo
 printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
 printf "  Then, from any directory:\n\n"
-printf "    exam4          %s# list the 13 tasks of exam 4%s\n" "$D" "$N"
-printf "    q4 1           %s# read a task%s\n" "$D" "$N"
-printf "    grade4         %s# grade and see your score out of 100%s\n" "$D" "$N"
-printf "    explain4 1     %s# step-by-step walkthrough%s\n" "$D" "$N"
-printf "    netcheck       %s# run real connectivity probes%s\n" "$D" "$N"
-printf "    exam4help      %s# full help, including task ordering%s\n\n" "$D" "$N"
+printf "    %scka use netpol%s   %s# select this exam%s
+" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s
+
+" "$BO" "$N" "$D" "$N"
 printf "  %sThe Helm exams stay available alongside it.%s\n" "$D" "$N"
 printf "  %sIf the Killercoda session expires, run %s/setup4.sh again.%s\n\n" "$D" "$HERE" "$N"

@@ -159,10 +159,10 @@ fi
 printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
 printf "  Then, from any directory:\n\n"
-printf "    exam           %s# list the 13 tasks%s\n" "$D" "$N"
-printf "    q 1            %s# read a task%s\n" "$D" "$N"
-printf "    grade          %s# grade and see your score out of 100%s\n" "$D" "$N"
-printf "    explain 1      %s# step-by-step walkthrough%s\n" "$D" "$N"
-printf "    examhelp       %s# full help%s\n\n" "$D" "$N"
+printf "    %scka use helm-core%s   %s# select this exam%s
+" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s
+
+" "$BO" "$N" "$D" "$N"
 printf "  %sNew shells load them automatically. If the Killercoda session%s\n" "$D" "$N"
 printf "  %sexpires, run %s/setup.sh again.%s\n\n" "$D" "$HERE" "$N"

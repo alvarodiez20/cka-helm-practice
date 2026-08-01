@@ -169,10 +169,10 @@ echo
 printf "%s  Done.%s Load the commands into this shell:\n\n" "$G$BO" "$N"
 printf "    %s\n\n" "$SRC_LINE"
 printf "  Then, from any directory:\n\n"
-printf "    exam3          %s# list the 13 tasks of exam 3%s\n" "$D" "$N"
-printf "    q3 1           %s# read a task%s\n" "$D" "$N"
-printf "    grade3         %s# grade and see your score out of 100%s\n" "$D" "$N"
-printf "    explain3 1     %s# step-by-step walkthrough%s\n" "$D" "$N"
-printf "    exam3help      %s# full help, including task ordering%s\n\n" "$D" "$N"
+printf "    %scka use helm-oci%s   %s# select this exam%s
+" "$BO" "$N" "$D" "$N"
+printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s
+
+" "$BO" "$N" "$D" "$N"
 printf "  %sExams 1 and 2 stay available alongside it.%s\n" "$D" "$N"
 printf "  %sIf the Killercoda session expires, run %s/setup3.sh again.%s\n\n" "$D" "$HERE" "$N"

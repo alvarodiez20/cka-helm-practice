@@ -9,6 +9,54 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.8.0] — 2026-07-30
+
+Verified exams 5 to 9 on a live Killercoda cluster (Kubernetes v1.35.1, Cilium,
+etcd 3.6.8, kubeadm v1.35.1). Exams 5, 6 and 7 reach 100/100; 8 and 9 did not,
+and the reasons were all real.
+
+### Fixed
+
+- **The new `cka` interface was invisible where it mattered.** Every `examN.sh`
+  hardcoded its own numbered command names, and every `setupN.sh` closing
+  message advertised `q8 1`, `grade8`, `explain8 1`. So a new user finished
+  setup and was told to use exactly the vocabulary `cka` replaced. All nine
+  exams now print the unnumbered verbs when `activate.sh` is loaded, and every
+  setup ends with `cka use <name>`. `examhelp` and `reset` route through the
+  dispatcher too.
+- **Exam 7 task 2 was unsolvable.** `pv-small`, `pv-inuse` and the PV the
+  candidate creates all shared storage class `manual`, so binding was ambiguous
+  — the seeded `inuse` claim bound to **pv-small** instead of `pv-inuse`, and
+  deleting the holder pod left pv-small `Released`. Task 2 names that volume, so
+  it could never bind. `pv-inuse` now has its own class. With that fixed the
+  claims bind exact-fit (2Gi→pv-small, 3Gi→pv-logs) and the exam scores 100/100.
+- **Exam 8 tasks 8 and 9 still undid each other.** Grading the eviction rather
+  than the cordon was not enough: once the node is uncordoned the evicted pods
+  are rescheduled straight back onto it. The check now latches — the first time
+  the drained state is seen it is recorded, and `setup8.sh` clears the marker.
+- Exam 8's certificate check printed a Python `DeprecationWarning` about
+  `datetime.utcnow()` into the middle of the grading output.
+- **Exam 9 task 1 was coupled to later tasks.** It required
+  `readyReplicas == spec.replicas`, but task 12 scales to 4 and task 8 adds a
+  spread constraint, so replicas can be legitimately Pending — task 1 went from
+  correct to failed without the candidate touching it. It now checks the
+  rollback and one ready replica.
+- **Exam 9 task 13 was a race.** It compared a captured file against a live
+  recomputation; with 14 pods in flux the sets never matched. Names you list
+  must now genuinely be non-Running pods, but pods that appeared after you
+  looked are forgiven.
+- `setup9.sh` printed `Done.  source source /root/...`.
+
+### Known, not yet fixed
+
+- `bootstrap.sh` is all-or-nothing: one 404 aborts the whole install. A CDN lag
+  right after a push produced exactly that during this run.
+- Exam 5 task 9 asks for the scheduler's rejection reason, which task 8 removes
+  by fixing the pod. The task text allows for it, but the ordering is not
+  documented — do 9 before 8.
+- Exam 8 task 6 accepts any certificate name `kubeadm` lists, not specifically
+  the soonest-expiring one.
+
 ## [1.7.0] — 2026-07-30
 
 ### Changed
@@ -464,6 +512,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.8.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.0
 [1.7.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.7.0
 [1.6.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.6.0
 [1.5.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.5.0

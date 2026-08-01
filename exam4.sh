@@ -27,7 +27,9 @@ else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
 # The command names differ depending on whether activate.sh is loaded.
 if [ -n "${EXAM_HOME:-}" ]; then
-  CL="exam4"; CQ="q4"; CG="grade4"; CE="explain4"; CS="solve4"; CH="exam4help"
+  # activate.sh is loaded: the verbs are unnumbered and act on the exam
+  # selected with 'cka use'. See cka.sh.
+  CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
   CL="./exam4.sh"; CQ="./exam4.sh q"; CG="./exam4.sh grade"
   CE="./exam4.sh explain"; CS="./exam4.sh solve"; CH="./exam4.sh help"

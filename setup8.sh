@@ -95,7 +95,7 @@ kubectl -n drain-lab patch deployment parked --type=json \
 kubectl uncordon "$NODE" >/dev/null 2>&1
 ok "namespace 'drain-lab' seeded with a 2-replica Deployment"
 
-rm -f "$ANS"/*.txt 2>/dev/null
+rm -f "$ANS"/*.txt "$EX8/.drained" 2>/dev/null
 
 cat > "$EX8/README.txt" <<EOF
 Exam 8 — etcd, kubeadm, certificates, node maintenance
