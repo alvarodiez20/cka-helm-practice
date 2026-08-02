@@ -9,6 +9,45 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.9.0] — 2026-08-02
+
+Selecting an exam now builds it. Reported from a fresh Killercoda session:
+`bootstrap.sh`, then `cka use netpol`, then a full task list for an exam whose
+namespaces did not exist — and `reset` needed by hand, every session.
+
+### Added
+
+- **`cka use <name>` seeds the exam if it is not there.** `bootstrap.sh` installs
+  all nine exams but seeds one (exam 1 unless `EXAM=N` says otherwise). `use`
+  wrote the selection and printed the task list without ever looking at the
+  cluster, so every exam except the seeded one presented thirteen tasks and
+  nothing to solve them against. That reads as a broken exam rather than an
+  unseeded one, and the only clue was the slow `cka scores`.
+- **Exams 5 and 6 are asked about first.** Their seeds break a worker node and
+  `kube-scheduler` on purpose, so `use` prompts instead of seeding, and refuses
+  outright when stdin is not a terminal. The other seven build unattended.
+- **The plain dashboard shows what is seeded.** `cka` marks each exam
+  `not seeded` from a single `kubectl get ns` — no grading, no measurable cost.
+  Previously only `cka scores` revealed it, a minute later.
+- **`cka scores` skips unseeded exams** rather than grading them to arrive at 0.
+- **`EXAM=none`** installs the suite without seeding anything, which seed-on-
+  select makes a sensible starting point. `EXAM=N` is now a convenience — it
+  saves building exam 1 when you already know you want another — rather than the
+  only way to reach exam N.
+
+### Changed
+
+- The `EXAMS` table in `cka.sh` carries two more columns: each exam's setup
+  script, and the marker namespaces that decide whether it is seeded. An exam
+  counts as seeded only when **every** marker namespace is present and `Active`,
+  so a half-built exam is treated as unseeded and gets rebuilt.
+
+### Documentation
+
+- **Install** now says only one exam is seeded, and why.
+- **Pick an exam** documents seed-on-select and the prompt for exams 5 and 6.
+- Troubleshooting entry for selecting an exam whose namespaces do not exist.
+
 ## [1.8.2] — 2026-08-02
 
 Re-seeding was not reliable, and worse, it did not admit when it had failed.

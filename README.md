@@ -55,13 +55,22 @@ curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/b
 source ~/cka-helm-practice/activate.sh
 ```
 
-That installs all nine exams and seeds the first one. New shells pick the
-commands up automatically via `~/.bashrc`.
+That installs all nine exams and **seeds the first one**, which takes about a
+minute. New shells pick the commands up automatically via `~/.bashrc`.
 
-To seed a different exam at install time, set `EXAM`:
+Installing and seeding are different things. All nine are installed; *seeding*
+means building an exam's namespaces, workloads and deliberately broken objects
+in the live cluster. Only one is seeded up front — doing all nine would take
+several minutes and, for exams 5 and 6, break the cluster before you had asked
+it to. **You do not have to seed the rest yourself:** `cka use storage` notices
+the exam is missing and builds it.
+
+So `curl … | bash` is all you need. If you already know you want a different
+exam, `EXAM` saves you building exam 1 first:
 
 ```bash
-curl -sL .../bootstrap.sh | EXAM=7 bash      # storage
+curl -sL .../bootstrap.sh | EXAM=7 bash         # seed storage instead
+curl -sL .../bootstrap.sh | EXAM=none bash      # install, seed nothing
 ```
 
 Or clone it:
@@ -95,11 +104,34 @@ currently selected.
     ...
 ```
 
+The `SCORE` column reads `not seeded` for any exam that does not exist in the
+cluster yet. Plain `cka` works that out from one `kubectl get ns`, so it stays
+instant; `cka scores` runs the graders, and skips the ones with nothing to
+grade.
+
 ### Pick an exam, then work on it
 
 ```bash
 cka use storage        # select it — by name, or by number: cka use 7
 ```
+
+**Selecting an exam seeds it if it is not there.** You do not have to think
+about which exams have been built:
+
+```
+$ cka use netpol
+
+  selected netpol — NetworkPolicy and network troubleshooting
+  q N · grade · explain N · next
+
+  'netpol' is not seeded yet — building it now
+  ...
+```
+
+Exams 5 (`nodes`) and 6 (`tshoot`) are the exception. Their seeds break a worker
+node and `kube-scheduler` on purpose, so selecting them asks first rather than
+wrecking a cluster you were using for something else. Answer `y`, or build them
+deliberately with `reset`.
 
 From then on the verbs are **unnumbered** and act on whatever you selected:
 
@@ -138,10 +170,15 @@ cka scores             # grade all nine and show every score (takes a minute)
 
 **Tab completion** works on exam names, verbs and task numbers.
 
-### Re-seeding an exam
+### Seeding and re-seeding an exam
 
-Every exam can be reset to its starting state at any time, as many times as you
-like:
+Installing an exam and seeding it are different things. `bootstrap.sh` downloads
+all nine, but seeds only the one you asked for (exam 1 by default). An exam that
+is installed but not seeded has a task list and a grader, and nothing in the
+cluster to point them at.
+
+`cka use <name>` closes that gap for you — it seeds on selection. `reset`
+rebuilds an exam you already have:
 
 ```bash
 reset                  # re-seed the exam you have selected
@@ -696,6 +733,12 @@ directories.
 **Every task suddenly shows ✘** — the Killercoda session expired and took the
 cluster with it. Re-seed the selected exam with `reset`, or any of them with `cka <name> reset`.
 
+**I selected an exam and none of its namespaces exist** — on 1.9.0 and later
+this does not happen: `cka use <name>` seeds the exam if it is missing. Before
+that, `bootstrap.sh` seeded only exam 1 and `cka use` never checked, so
+selecting any other exam gave you a task list with nothing behind it and you had
+to run `reset` by hand every session. Re-run `bootstrap.sh` to pick up the fix.
+
 **A task refers to a pod or namespace that does not exist** — the seed did not
 finish. Check what is actually there:
 
@@ -707,7 +750,7 @@ kubectl get pods -A
 If a namespace the exam needs is missing or `Terminating`, wait for it to
 disappear and run `reset` again. This is most likely if you re-seeded on top of
 a previous run and interrupted it, or ran two seeds at the same time. See
-[Re-seeding an exam](#re-seeding-an-exam).
+[Seeding and re-seeding an exam](#seeding-and-re-seeding-an-exam).
 
 > Versions before 1.8.2 could hit this on their own: the seed deleted the old
 > namespaces without waiting long enough, then recreated them with all kubectl

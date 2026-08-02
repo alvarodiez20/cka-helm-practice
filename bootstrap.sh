@@ -2,15 +2,16 @@
 # Downloads the exams and prepares the environment in one go.
 #   curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 #
-# By default it seeds exam 1. To seed another instead:
-#   curl -sL .../bootstrap.sh | EXAM=2 bash
-#   curl -sL .../bootstrap.sh | EXAM=3 bash
-#   curl -sL .../bootstrap.sh | EXAM=4 bash
-#   curl -sL .../bootstrap.sh | EXAM=5 bash    <- breaks a worker node
-#   curl -sL .../bootstrap.sh | EXAM=6 bash    <- breaks kube-scheduler
-#   curl -sL .../bootstrap.sh | EXAM=7 bash
-#   curl -sL .../bootstrap.sh | EXAM=8 bash
-#   curl -sL .../bootstrap.sh | EXAM=9 bash
+# All nine exams are installed either way. EXAM only decides which one is
+# SEEDED — built in the cluster — before you are handed the prompt. Since
+# 'cka use <name>' seeds an exam on selection, this is a convenience, not a
+# requirement: it exists so you can skip building an exam you did not want.
+#
+#   curl -sL .../bootstrap.sh | bash              seeds exam 1 (default)
+#   curl -sL .../bootstrap.sh | EXAM=7 bash       seeds storage instead
+#   curl -sL .../bootstrap.sh | EXAM=none bash    installs, seeds nothing
+#
+# EXAM=5 breaks a worker node and EXAM=6 breaks kube-scheduler, on purpose.
 set -uo pipefail
 
 GH_USER="${GH_USER:-alvarodiez20}"
@@ -44,6 +45,19 @@ if [ -n "$MISSING" ]; then
   echo "  warning: could not download:$MISSING"
   echo "  (everything else installed; those exams will be unavailable)"
 fi
+
+# Install only. 'cka use <name>' will seed whichever exam you pick.
+case "$EXAM" in
+  none|no|skip|0)
+    echo
+    echo "  Installed. Nothing seeded yet — selecting an exam builds it:"
+    echo
+    echo "    source ${DEST}/activate.sh"
+    echo "    cka              # the dashboard: all nine, and what is seeded"
+    echo "    cka use netpol   # select one; it is built if it is not there"
+    echo
+    exit 0 ;;
+esac
 
 # The one thing worth failing over: the exam that was actually requested.
 case "$EXAM" in

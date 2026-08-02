@@ -28,23 +28,56 @@ else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
 # number | name | script | one-line topic
 # Kept as a flat list so it works on bash 3.2 (no associative arrays).
+#   number | name | exam script | setup script | marker namespaces | topic
+# The marker namespaces are what "is this exam seeded?" is decided on: the
+# namespaces its own seed creates, which nothing else in the cluster owns.
 EXAMS="\
-1|helm-core|exam.sh|Helm: install, rollback, values, packaging
-2|helm-values|exam2.sh|Helm: repos, values files, --atomic, subcharts
-3|helm-oci|exam3.sh|Helm: real charts, CRDs, OCI registries
-4|netpol|exam4.sh|NetworkPolicy and network troubleshooting
-5|nodes|exam5.sh|Worker node failures: kubelet, taints, static pods
-6|tshoot|exam6.sh|General troubleshooting: control plane, pods, RBAC
-7|storage|exam7.sh|Storage: PV, PVC, StorageClass, StatefulSet volumes
-8|cluster|exam8.sh|etcd backup and restore, kubeadm, certificates
-9|workloads|exam9.sh|Workloads and scheduling: rollouts, Jobs, affinity"
+1|helm-core|exam.sh|setup.sh|apps hidden-77|Helm: install, rollback, values, packaging
+2|helm-values|exam2.sh|setup2.sh|stage broken-77|Helm: repos, values files, --atomic, subcharts
+3|helm-oci|exam3.sh|setup3.sh|limbo|Helm: real charts, CRDs, OCI registries
+4|netpol|exam4.sh|setup4.sh|frontend backend monitoring shop netdebug|NetworkPolicy and network troubleshooting
+5|nodes|exam5.sh|setup5.sh|node-lab|Worker node failures: kubelet, taints, static pods
+6|tshoot|exam6.sh|setup6.sh|tshoot|General troubleshooting: control plane, pods, RBAC
+7|storage|exam7.sh|setup7.sh|store-lab|Storage: PV, PVC, StorageClass, StatefulSet volumes
+8|cluster|exam8.sh|setup8.sh|drain-lab|etcd backup and restore, kubeadm, certificates
+9|workloads|exam9.sh|setup9.sh|work-lab|Workloads and scheduling: rollouts, Jobs, affinity"
+
+# Exams 5 and 6 break the cluster on purpose, so they are never seeded without
+# being asked for. Everything else is safe to build unattended.
+DESTRUCTIVE="5 6"
 
 field(){ printf '%s\n' "$EXAMS" | awk -F'|' -v k="$1" -v c="$2" '$1==k||$2==k{print $c; exit}'; }
 num_of(){ field "$1" 1; }
 name_of(){ field "$1" 2; }
 script_of(){ field "$1" 3; }
-topic_of(){ field "$1" 4; }
+setup_of(){ field "$1" 4; }
+marker_of(){ field "$1" 5; }
+topic_of(){ field "$1" 6; }
 known(){ [ -n "$(num_of "$1")" ]; }
+destructive(){ case " $DESTRUCTIVE " in *" $(num_of "$1") "*) return 0 ;; *) return 1 ;; esac; }
+
+# ── is an exam actually present in the cluster? ─────────────
+# Selecting an exam used to print its task list without ever looking at the
+# cluster, so 'cka use netpol' after a bootstrap that only seeded exam 1 gave
+# you thirteen tasks and nothing to solve them against. One 'kubectl get ns'
+# per process answers it for all nine.
+ALL_NS=""
+ns_snapshot(){
+  [ -n "$ALL_NS" ] && return 0
+  ALL_NS="$(kubectl get ns --no-headers 2>/dev/null | awk '$2=="Active"{print $1}')"
+  ALL_NS="${ALL_NS:-__no_cluster__}"
+}
+
+seeded(){ # every marker namespace of this exam exists and is Active
+  local ns markers
+  markers="$(marker_of "$1")"
+  [ -n "$markers" ] || return 1
+  ns_snapshot
+  for ns in $markers; do
+    printf '%s\n' "$ALL_NS" | grep -qx "$ns" || return 1
+  done
+  return 0
+}
 
 current(){ # the selected exam number, defaulting to 1
   local c=""
@@ -72,10 +105,14 @@ dashboard(){ # $1 = "scores" to grade every exam (slow)
   printf "\n%s  cka-helm-practice%s %sv%s%s — nine exams, 100 points each, pass mark 66\n\n" \
     "$BO" "$N" "$D" "$VERSION" "$N"
   printf "  %s  %-4s %-13s %-52s %s%s\n" "$D" "" "NAME" "TOPIC" "SCORE" "$N"
-  printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script topic; do
+  printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script setup marker topic; do
     local mark="  "; [ "$n" = "$cur" ] && mark="${G}▸ ${N}"
     local sc="$D·$N"
-    if [ "${1:-}" = "scores" ]; then
+    # An unseeded exam has no score to report and grading it would only waste
+    # a few seconds arriving at 0, so say so and skip the grader entirely.
+    if ! seeded "$n"; then
+      sc="${D}not seeded${N}"
+    elif [ "${1:-}" = "scores" ]; then
       sc="$(score_of "$n")"
       case "$sc" in
         -) sc="${D}not seeded${N}" ;;
@@ -118,7 +155,7 @@ usage(){
   printf "    %-24s %s\n" "cka storage q 3" "task 3 of the storage exam"
   printf "    %-24s %s\n\n" "cka 7 grade" "the same, by number"
   printf "%s  THE NAMES%s\n\n" "$BO" "$N"
-  printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script topic; do
+  printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script setup marker topic; do
     printf "    %-3s %-13s %s\n" "$n" "$name" "$topic"
   done
   printf "\n  %sThe old numbered commands (q6 4, grade7, exam3) still work.%s\n\n" "$D" "$N"
@@ -157,6 +194,37 @@ case "${1:-dashboard}" in
     n="$(num_of "$2")"
     printf "\n  %sselected%s %s%s%s — %s\n" "$D" "$N" "$BO" "$(name_of "$n")" "$N" "$(topic_of "$n")"
     printf "  %sq N · grade · explain N · next%s\n\n" "$D" "$N"
+    # bootstrap.sh seeds ONE exam. Selecting any other one used to hand you a
+    # task list with nothing behind it in the cluster, which reads as a broken
+    # exam rather than an unseeded one. So build it here.
+    if ! seeded "$n"; then
+      seed="$(setup_of "$n")"
+      if [ "$ALL_NS" = "__no_cluster__" ]; then
+        printf "  %sno cluster reachable — cannot seed '%s'. The tasks below are%s\n" "$R" "$(name_of "$n")" "$N" >&2
+        printf "  %sstill readable; 'reset' will build it once kubectl works.%s\n\n" "$D" "$N" >&2
+      elif [ ! -f "$HERE/$seed" ]; then
+        printf "  %s'%s' is not seeded and %s is missing%s\n\n" "$R" "$(name_of "$n")" "$seed" "$N" >&2
+      elif destructive "$n" && [ -t 0 ]; then
+        # These break a node or the scheduler. Never without being asked.
+        printf "  %s'%s' is not seeded, and its seed BREAKS THE CLUSTER on purpose%s\n" \
+          "$Y" "$(name_of "$n")" "$N"
+        printf "  %s(exam5restore / exam6restore undo it).%s\n" "$D" "$N"
+        printf "  seed it now? [y/N] "
+        read -r reply
+        case "$reply" in
+          [yY]*) EXAM_HOME="$HERE" bash "$HERE/$seed" ;;
+          *) printf "\n  %sleft alone — run 'reset' when you want it%s\n\n" "$D" "$N"; exit 0 ;;
+        esac
+      elif destructive "$n"; then
+        printf "  %s'%s' is not seeded. Its seed breaks the cluster on purpose, so it%s\n" "$Y" "$(name_of "$n")" "$N"
+        printf "  %swill not run unattended — use 'reset' to build it.%s\n\n" "$D" "$N"
+        exit 0
+      else
+        printf "  %s'%s' is not seeded yet — building it now%s\n" "$D" "$(name_of "$n")" "$N"
+        EXAM_HOME="$HERE" bash "$HERE/$seed" \
+          || { printf "\n  %sseeding failed — fix the above and run 'reset'%s\n\n" "$R" "$N" >&2; exit 1; }
+      fi
+    fi
     run "$n" list ;;
   next)    next_task "${2:-}" ;;
   help|-h|--help) usage ;;
