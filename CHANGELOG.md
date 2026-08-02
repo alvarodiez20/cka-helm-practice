@@ -9,6 +9,56 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.11.1] — 2026-08-02
+
+Reported from a fresh Killercoda install: `bootstrap.sh` seeded exam 1, said so,
+and `q 1` then printed **exam 7, task 1** — a storage task, against a cluster
+with no storage exam in it.
+
+### Fixed
+
+- **`bootstrap.sh` now selects the exam it seeds.** `cka use` was the only thing
+  that ever wrote `~/.cka-current`, and nothing cleared it. So a returning user
+  who had selected a different exam in an earlier session got *that* exam's
+  tasks from `q 1`, while bootstrap had just built this one and told them it was
+  ready. Nothing in the output was wrong; the two halves simply disagreed about
+  which exam you were on.
+
+- **Selecting an exam that is not in the cluster now says so.** Showing a task
+  list for an unseeded exam is how a stale selection presents: the tasks read
+  fine, nothing they refer to exists, and the exam looks broken rather than
+  unbuilt. `list`, `q`, `grade`, `explain` and `next` now print one line first —
+  which exam it is, that it is not seeded, and the command that builds it.
+
+- **`exam7.sh` shipped with a broken walkthrough, and `bash -n` passed it.** An
+  unescaped `"` inside `WALK[1]` closed the string early; the rest of the
+  paragraph was then parsed as shell, and printed
+  `` `WALK[1]': not a valid identifier `` and `volumes: command not found` into
+  the middle of a candidate's walkthrough. English parses often enough to stay
+  syntactically valid, which is why nothing caught it.
+
+  New **`scripts/check-tasks.sh`**, wired into CI, renders `q`, `solve` and
+  `explain` for all thirteen tasks of all ten exams and requires exit 0, empty
+  stderr and non-trivial output. That catches an odd stray quote, which breaks
+  loudly. A second, static pass catches the quiet case: a *balanced* pair like
+  `"damage"` closes the string and reopens it, so the text still assigns —
+  minus the quotes, and with whatever sits between them now subject to
+  expansion. A `$(` in there would run. Both were confirmed against planted
+  examples.
+
+### Documentation
+
+- **"There is no StorageClass called `manual`"** — correct, and there does not
+  need to be, but exam 7 never said so. On a PersistentVolume,
+  `storageClassName` is a matching *label*, not a reference: nothing looks it
+  up, and `manual` is the convention for volumes administered by hand. Only a
+  claim that finds no matching PV needs the object to exist, in order to
+  provision from it. `explain 1` now covers that, along with the two adjacent
+  traps — the empty string means *explicitly no class*, while omitting the field
+  lets admission apply the default class, which on Killercoda is `local-path`
+  and would provision a new volume instead of binding the one you just made.
+  `examhelp` carries the short version.
+
 ## [1.11.0] — 2026-08-02
 
 Versioning was documented but not enforced. This makes it real.

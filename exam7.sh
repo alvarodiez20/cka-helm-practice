@@ -74,7 +74,31 @@ WALK[1]="1. A PV is cluster-scoped — no namespace. Every field in this task ma
               most dynamic provisioners.
      Recycle  deprecated; do not use.
 
-4. Verify:
+4. 'kubectl get storageclass' does not list 'manual', and that is correct.
+   It is the question everyone asks at this point, so: a PV's
+   storageClassName does NOT have to name a StorageClass object that exists.
+
+     On a PV     storageClassName is a LABEL. It is one of the things a
+                 claim is matched against, alongside capacity and access
+                 mode. Nothing looks it up.
+     On a PVC    the same string, used for matching — plus, if no PV
+                 matches, the name of the StorageClass to PROVISION from.
+                 Only that second use needs the object to exist.
+
+   So 'manual' is the conventional name for a class meaning: these volumes
+   are administered by hand, provision nothing. Static provisioning, which is
+   what this exam is about, needs no StorageClass at all. Tasks 4 and 5 are
+   where you create real StorageClass objects, for dynamic provisioning.
+
+   Two related traps worth keeping straight. Set the field to the empty
+   string and you mean 'explicitly no class': such a claim binds only to PVs
+   that also have no class, and is never dynamically provisioned. Omit the
+   field entirely and admission applies the DEFAULT StorageClass — on this
+   cluster that is 'local-path', which would provision a brand new volume
+   instead of binding the one you just made. That is why the task names a
+   class rather than leaving it out.
+
+5. Verify:
 
      kubectl get pv pv-logs
      # STATUS Available  CLAIM <none>  STORAGECLASS manual
@@ -876,6 +900,12 @@ usage(){
   printf "    cluster. Dynamic provisioning is covered where it matters — the\n"
   printf "    StorageClass fields in tasks 4 and 5 — without needing a CSI driver\n"
   printf "    to actually create anything.\n\n"
+  printf "%s  'THERE IS NO STORAGECLASS CALLED manual'%s\n\n" "$BO" "$N"
+  printf "    Correct, and there does not need to be. On a PersistentVolume,\n"
+  printf "    storageClassName is a matching LABEL, not a reference — nothing looks\n"
+  printf "    it up, and 'manual' is the convention for \"administered by hand, do\n"
+  printf "    not provision\". Only a PVC that finds no matching PV needs the object\n"
+  printf "    to exist, in order to provision from it. %sexplain 1%s has the detail.\n\n" "$BO" "$N"
   printf "%s  THE ONE TO SLOW DOWN ON%s\n\n" "$BO" "$N"
   printf "    Task 3. A Retain PV whose claim was deleted goes to Released and will\n"
   printf "    NEVER rebind, however correct the next claim is — because .spec.claimRef\n"

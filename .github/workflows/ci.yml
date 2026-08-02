@@ -71,6 +71,17 @@ jobs:
       - name: no grader awards points without a cluster
         run: ./scripts/audit-graders.sh
 
+  tasks:
+    name: every task renders
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: q, solve and explain, all tasks, all exams
+        # 'bash -n' does not catch an unescaped quote inside a task string:
+        # it closes the string early, the rest of the paragraph is parsed as
+        # commands, and English parses often enough to stay 'valid'.
+        run: ./scripts/check-tasks.sh
+
   version:
     name: version consistency
     runs-on: ubuntu-latest

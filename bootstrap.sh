@@ -69,6 +69,17 @@ for f in $NEED; do
   [ -s "$f" ] || { echo "  cannot start exam ${EXAM}: ${f} is missing"; exit 1; }
 done
 
+# Select the exam we are about to seed. Without this, 'cka use' is the only
+# thing that ever writes the selection, so a returning user who had selected
+# a different exam in an earlier session got THAT exam's tasks from 'q 1' —
+# while bootstrap had just seeded this one and told them it was ready.
+# Reported from a session that installed exam 1 and was handed exam 7 task 1.
+STATE="${CKA_STATE:-${HOME}/.cka-current}"
+case "$EXAM" in
+  1|"") printf '1\n' > "$STATE" 2>/dev/null ;;
+  *)    printf '%s\n' "$EXAM" > "$STATE" 2>/dev/null ;;
+esac
+
 case "$EXAM" in
   2) exec ./setup2.sh ;;
   3) exec ./setup3.sh ;;

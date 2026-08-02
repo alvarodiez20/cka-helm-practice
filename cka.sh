@@ -165,9 +165,29 @@ usage(){
   printf "\n  %sThe old numbered commands (q6 4, grade7, exam3) still work.%s\n\n" "$D" "$N"
 }
 
+# ── is the exam you are about to work on actually there? ────
+# Showing a task list for an exam that does not exist in the cluster is how a
+# stale selection presents: the tasks read fine, nothing they refer to is
+# there, and the exam looks broken rather than unbuilt. Say it once, before
+# the output, and name the command that fixes it.
+warn_unseeded(){ # $1 = exam number or name
+  local n name
+  n="$(num_of "$1")"; [ -n "$n" ] || return 0
+  seeded "$n" && return 0
+  name="$(name_of "$n")"
+  if [ "$ALL_NS" = "__no_cluster__" ]; then
+    printf "\n  %s! no cluster reachable — nothing here can be graded%s\n" "$Y" "$N" >&2
+  else
+    printf "\n  %s! '%s' is not seeded in this cluster%s — the objects these tasks\n" "$Y" "$name" "$N" >&2
+    printf "    refer to do not exist yet.\n" >&2
+    printf "  %sbuild it:  cka use %s      see what is:  cka%s\n" "$D" "$name" "$N" >&2
+  fi
+}
+
 # ── the first unsolved task ─────────────────────────────────
 next_task(){
   local n; n="$(num_of "${1:-$(current)}")"
+  warn_unseeded "$n"
   local i found=""
   for i in $(seq 1 13); do
     if ! run "$n" grade "$i" 2>/dev/null | grep -q '✔'; then found="$i"; break; fi
@@ -244,7 +264,11 @@ case "${1:-dashboard}" in
     fi
     cmd="$1"; shift
     case "$cmd" in
-      list|q|show|grade|explain|walk|steps|solve|reset|help|version) run "$target" "$cmd" "$@" ;;
+      # A warning first for the verbs that read the cluster or describe what is
+      # in it. Not for 'reset', which is the fix, nor for 'help'/'version'.
+      list|q|show|grade|explain|walk|steps|solve)
+                  warn_unseeded "$target"; run "$target" "$cmd" "$@" ;;
+      reset|help|version) run "$target" "$cmd" "$@" ;;
       next)       next_task "$target" ;;
       examhelp)   run "$target" help ;;
       # Each exam names its dashboard differently; 'info' is the alias that
