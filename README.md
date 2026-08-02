@@ -4,7 +4,7 @@
 
 **Ten hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader inspects the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.11.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.11.1-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Exams](https://img.shields.io/badge/exams-10-orange?style=flat-square)](#the-ten-exams)
 [![Tasks](https://img.shields.io/badge/tasks-130-orange?style=flat-square)](#the-ten-exams)

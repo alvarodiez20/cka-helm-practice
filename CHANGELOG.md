@@ -808,6 +808,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.11.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.11.1
 [1.11.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.11.0
 [1.10.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.10.0
 [1.9.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.9.0
