@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 #  cka-helm-practice · cka.sh
-#  One entry point for all nine exams.
+#  One entry point for all ten exams.
 #
 #  The old interface needed the exam number baked into every
 #  command name — 'q6 6' meaning task 6 of exam 6, out of 72
@@ -40,11 +40,15 @@ EXAMS="\
 6|tshoot|exam6.sh|setup6.sh|tshoot|General troubleshooting: control plane, pods, RBAC
 7|storage|exam7.sh|setup7.sh|store-lab|Storage: PV, PVC, StorageClass, StatefulSet volumes
 8|cluster|exam8.sh|setup8.sh|drain-lab|etcd backup and restore, kubeadm, certificates
-9|workloads|exam9.sh|setup9.sh|work-lab|Workloads and scheduling: rollouts, Jobs, affinity"
+9|workloads|exam9.sh|setup9.sh|work-lab|Workloads and scheduling: rollouts, Jobs, affinity
+10|gateway|exam10.sh|setup10.sh|edge-lab|Ingress, Gateway API, and CNI troubleshooting"
 
-# Exams 5 and 6 break the cluster on purpose, so they are never seeded without
-# being asked for. Everything else is safe to build unattended.
-DESTRUCTIVE="5 6"
+# Exams 5, 6 and 10 break the cluster on purpose, so they are never seeded
+# without being asked for. Everything else is safe to build unattended.
+#   5   stops and misconfigures the kubelet on a worker
+#   6   breaks the scheduler
+#   10  disables the CNI configuration on a worker
+DESTRUCTIVE="5 6 10"
 
 field(){ printf '%s\n' "$EXAMS" | awk -F'|' -v k="$1" -v c="$2" '$1==k||$2==k{print $c; exit}'; }
 num_of(){ field "$1" 1; }
@@ -60,7 +64,7 @@ destructive(){ case " $DESTRUCTIVE " in *" $(num_of "$1") "*) return 0 ;; *) ret
 # Selecting an exam used to print its task list without ever looking at the
 # cluster, so 'cka use netpol' after a bootstrap that only seeded exam 1 gave
 # you thirteen tasks and nothing to solve them against. One 'kubectl get ns'
-# per process answers it for all nine.
+# per process answers it for all ten.
 ALL_NS=""
 ns_snapshot(){
   [ -n "$ALL_NS" ] && return 0
@@ -102,7 +106,7 @@ score_of(){ # prints "got/max", or "-" if the exam cannot be graded here
 # ── the dashboard ───────────────────────────────────────────
 dashboard(){ # $1 = "scores" to grade every exam (slow)
   local cur; cur="$(current)"
-  printf "\n%s  cka-helm-practice%s %sv%s%s — nine exams, 100 points each, pass mark 66\n\n" \
+  printf "\n%s  cka-helm-practice%s %sv%s%s — ten exams, 100 points each, pass mark 66\n\n" \
     "$BO" "$N" "$D" "$VERSION" "$N"
   printf "  %s  %-4s %-13s %-52s %s%s\n" "$D" "" "NAME" "TOPIC" "SCORE" "$N"
   printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script setup marker topic; do
@@ -126,14 +130,14 @@ dashboard(){ # $1 = "scores" to grade every exam (slow)
   printf "\n  %sselected:%s %s%s%s  %s(%s)%s\n" "$D" "$N" "$BO" "$(name_of "$cur")" "$N" \
     "$D" "$(topic_of "$cur")" "$N"
   if [ "${1:-}" != "scores" ]; then
-    printf "  %scka scores%s grades all nine — takes a minute.\n" "$D" "$N"
+    printf "  %scka scores%s grades all ten — takes a minute.\n" "$D" "$N"
   fi
   printf "\n  %scka use <name>%s   switch     %sq N · grade · explain N · next%s\n\n" \
     "$BO" "$N" "$BO" "$N"
 }
 
 usage(){
-  printf "\n%s  cka%s — one entry point for all nine exams\n\n" "$BO" "$N"
+  printf "\n%s  cka%s — one entry point for all ten exams\n\n" "$BO" "$N"
   printf "%s  PICK AN EXAM%s\n\n" "$BO" "$N"
   printf "    %-24s %s\n" "cka" "the dashboard: every exam, and which is selected"
   printf "    %-24s %s\n" "cka scores" "the same, plus your score in each (slow)"

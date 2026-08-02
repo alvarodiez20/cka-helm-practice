@@ -9,6 +9,95 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.10.0] — 2026-08-02
+
+Ten exams, 130 tasks, 1000 points.
+
+### Added
+
+- **Exam 10** (`setup10.sh`, `exam10.sh`) — 13 tasks on **Ingress, the Gateway
+  API, and the CNI**, in three sections, because on a real cluster they are one
+  problem: something has to publish the service, something has to route to it,
+  and something has to give the pods addresses in the first place.
+
+  *Ingress (tasks 1–5).* An IngressClass and what its two name-like fields
+  actually do — `metadata.name` is what an Ingress references,
+  `spec.controller` is an opaque string the implementation matches on, and
+  getting the second wrong means every Ingress in the class is ignored in
+  silence. An Ingress with two paths where the `api` service publishes 8080 and
+  the container listens on 80, so naming the container port produces an object
+  that looks perfect and 503s. An Ingress written for a pre-1.18 cluster,
+  carrying the deprecated `kubernetes.io/ingress.class` annotation, `pathType:
+  Exact` where the subtree was meant, and the wrong port — three faults, three
+  separate habits. TLS, where the host in the `tls` block has to match the host
+  in the rule because the certificate is chosen by SNI before anything looks at
+  a path. And the 503 that is not an Ingress problem at all: a Service whose
+  selector says `app=order` against pods labelled `app=orders`, which nothing
+  validates and nothing warns about.
+
+  *Gateway API (tasks 6–9).* The API entered the CKA curriculum in early 2026
+  and the reported questions are precisely these: create the GatewayClass and
+  Gateway, attach an HTTPRoute, split traffic, and work out why a route does
+  nothing. Task 7 is built around the failure mode everyone hits — an HTTPRoute
+  with no `parentRefs`, or a parent that does not exist, is a perfectly valid
+  object. `kubectl apply` exits 0, nothing warns, and the route is inert. Task 9
+  hands you exactly that and asks you to find it. Task 8 covers weighted
+  splitting, the thing Ingress could never do, including the two facts people
+  get wrong: weights are relative rather than percentages, and both backends
+  must share one rule, because two rules are alternatives and the first match
+  wins.
+
+  The same two hostnames are routed twice, once each way, so the mapping is
+  unavoidable: `ingressClassName` becomes `parentRefs`, `pathType: Prefix`
+  becomes `type: PathPrefix`.
+
+  *CNI (tasks 10–13).* Every file in `/etc/cni/net.d` on the worker is renamed
+  out of the way and an invalid config that sorts first is planted in their
+  place. What makes this worth practising is the asymmetry: pods already running
+  are untouched, because their network namespaces were configured before the
+  fault, while nothing new can start. The cluster looks healthy on a dashboard
+  and cannot deploy anything.
+
+  Task 10 asks for the node's own explanation and task 11 repairs it — in that
+  order, because the repair erases the evidence, and the ordering is stated in
+  the task, the help and the walkthrough. The walkthroughs cover the part that
+  trips people up: since dockershim was removed in 1.24 the kubelet does not
+  read `/etc/cni/net.d` at all. containerd does, and reports network readiness
+  upward over the CRI — which is why restarting the kubelet does not help and
+  restarting the runtime usually does. Task 12 then refuses to take Ready as
+  proof and makes you get a real pod a real address out of the cluster's pod
+  CIDR. Task 13 rebuilds a CNI DaemonSet's three non-negotiable settings and why
+  each exists — `operator: Exists` tolerating everything including the
+  not-ready taint, because a node without a CNI is not ready by definition and
+  an agent that will not run there can never fix it.
+
+- `EXAM=10`, the name `gateway`, `edgeinfo`, `exam10restore`, and the usual
+  `exam10` / `q10` / `grade10` family. Tab completion and the dispatcher tables
+  updated.
+
+### Changed
+
+- **`gateway` joins `nodes` and `tshoot` as a destructive exam.** `cka use
+  gateway` will not seed it without asking, and `bootstrap.sh` documents
+  `EXAM=10` as breaking a worker.
+- `setup10.sh` installs the Gateway API standard channel (v1.4.1 by default,
+  override with `CKA_GWAPI_VERSION` or `CKA_GWAPI_URL`) if the CRDs are absent.
+  The Gateway API is not built into Kubernetes and never has been; it ships as
+  CRDs on its own release schedule. If the download fails the seed says so and
+  carries on, rather than silently producing an exam whose middle third cannot
+  be attempted.
+- The seeded backends tolerate `not-ready` and `unreachable` **for ever**. This
+  is not decoration: the CNI fault takes the node NotReady, and the default
+  300-second eviction toleration would otherwise start deleting the exam's own
+  pods five minutes in, on a node where nothing can be rescheduled. It is also
+  the same trick every real CNI DaemonSet uses, for the same reason — which
+  task 13 then asks you to apply yourself.
+- No ingress controller and no Gateway implementation are installed, on purpose.
+  Ingresses keep an empty `ADDRESS` and Gateways stay `PROGRAMMED=Unknown`;
+  every routing task is graded on the object, as the CKA grades them. The help
+  and the README say so prominently, because chasing a missing address is the
+  trap.
+
 ## [1.9.0] — 2026-08-02
 
 Selecting an exam now builds it. Reported from a fresh Killercoda session:
@@ -603,6 +692,9 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.10.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.10.0
+[1.9.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.9.0
+[1.8.2]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.2
 [1.8.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.1
 [1.8.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.0
 [1.7.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.7.0

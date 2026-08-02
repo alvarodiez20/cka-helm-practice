@@ -2,12 +2,12 @@
 
 # cka-helm-practice
 
-**Nine hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader inspects the cluster — not your answers.**
+**Ten hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader inspects the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.8.1-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.10.0-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Exams](https://img.shields.io/badge/exams-9-orange?style=flat-square)](#the-nine-exams)
-[![Tasks](https://img.shields.io/badge/tasks-117-orange?style=flat-square)](#the-nine-exams)
+[![Exams](https://img.shields.io/badge/exams-10-orange?style=flat-square)](#the-ten-exams)
+[![Tasks](https://img.shields.io/badge/tasks-130-orange?style=flat-square)](#the-ten-exams)
 [![Pass mark](https://img.shields.io/badge/pass%20mark-66-brightgreen?style=flat-square)](#scoring)
 
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://www.cncf.io/training/certification/cka/)
@@ -15,7 +15,7 @@
 [![Bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?style=flat-square&logo=gnubash&logoColor=white)](#requirements)
 [![Killercoda](https://img.shields.io/badge/Killercoda-ready-1DB954?style=flat-square)](https://killercoda.com/playgrounds/scenario/cka)
 
-[Install](#install) · [How to use it](#how-to-use-it) · [The nine exams](#the-nine-exams) · [Requirements](#requirements) · [Troubleshooting](#troubleshooting)
+[Install](#install) · [How to use it](#how-to-use-it) · [The ten exams](#the-ten-exams) · [Requirements](#requirements) · [Troubleshooting](#troubleshooting)
 
 <!-- Recorded with demo/record-demo.sh on a Killercoda CKA playground
      (Kubernetes v1.35.1, Helm 4.1.1). See demo/README.md. -->
@@ -27,7 +27,7 @@
 
 ## What this is
 
-Nine independent exams, thirteen tasks each, one hundred points apiece. Every
+Ten independent exams, thirteen tasks each, one hundred points apiece. Every
 task is something you **do** to a live cluster. When you ask for a score, the
 grader inspects the cluster's real state — release revisions, stored value
 types, rendered manifests, endpoint addresses, certificate dates — and never
@@ -55,14 +55,14 @@ curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/b
 source ~/cka-helm-practice/activate.sh
 ```
 
-That installs all nine exams and **seeds the first one**, which takes about a
+That installs all ten exams and **seeds the first one**, which takes about a
 minute. New shells pick the commands up automatically via `~/.bashrc`.
 
-Installing and seeding are different things. All nine are installed; *seeding*
+Installing and seeding are different things. All ten are installed; *seeding*
 means building an exam's namespaces, workloads and deliberately broken objects
-in the live cluster. Only one is seeded up front — doing all nine would take
-several minutes and, for exams 5 and 6, break the cluster before you had asked
-it to. **You do not have to seed the rest yourself:** `cka use storage` notices
+in the live cluster. Only one is seeded up front — doing all ten would take
+several minutes and, for exams 5, 6 and 10, break the cluster before you had
+asked it to. **You do not have to seed the rest yourself:** `cka use storage` notices
 the exam is missing and builds it.
 
 So `curl … | bash` is all you need. If you already know you want a different
@@ -90,11 +90,11 @@ cd cka-helm-practice && ./setup.sh && source ./activate.sh
 cka
 ```
 
-That prints the dashboard: all nine exams, what each covers, and which one is
+That prints the dashboard: all ten exams, what each covers, and which one is
 currently selected.
 
 ```
-  cka-helm-practice v1.7.0 — nine exams, 100 points each, pass mark 66
+  cka-helm-practice v1.10.0 — ten exams, 100 points each, pass mark 66
 
        NAME          TOPIC                                                SCORE
   ▸ 1  helm-core     Helm: install, rollback, values, packaging           74/100
@@ -128,10 +128,10 @@ $ cka use netpol
   ...
 ```
 
-Exams 5 (`nodes`) and 6 (`tshoot`) are the exception. Their seeds break a worker
-node and `kube-scheduler` on purpose, so selecting them asks first rather than
-wrecking a cluster you were using for something else. Answer `y`, or build them
-deliberately with `reset`.
+Exams 5 (`nodes`), 6 (`tshoot`) and 10 (`gateway`) are the exception. Their seeds
+break a worker node, `kube-scheduler` and a worker's CNI configuration on
+purpose, so selecting them asks first rather than wrecking a cluster you were
+using for something else. Answer `y`, or build them deliberately with `reset`.
 
 From then on the verbs are **unnumbered** and act on whatever you selected:
 
@@ -165,7 +165,7 @@ You do not have to select an exam to touch it. Put its name first:
 ```bash
 cka storage q 3        # task 3 of the storage exam
 cka 7 grade            # the same exam, by number
-cka scores             # grade all nine and show every score (takes a minute)
+cka scores             # grade all ten and show every score (takes a minute)
 ```
 
 **Tab completion** works on exam names, verbs and task numbers.
@@ -173,7 +173,7 @@ cka scores             # grade all nine and show every score (takes a minute)
 ### Seeding and re-seeding an exam
 
 Installing an exam and seeding it are different things. `bootstrap.sh` downloads
-all nine, but seeds only the one you asked for (exam 1 by default). An exam that
+all ten, but seeds only the one you asked for (exam 1 by default). An exam that
 is installed but not seeded has a task list and a grader, and nothing in the
 cluster to point them at.
 
@@ -208,7 +208,7 @@ reset
 
 Exams do not interfere with each other. Each one owns its own namespaces and its
 own `~/answersN` directory, so seeding exam 7 never disturbs exam 4, and you can
-have all nine seeded at once.
+have all ten seeded at once.
 
 ### The names
 
@@ -223,6 +223,7 @@ have all nine seeded at once.
 | 7 | `storage` | Storage: PV, PVC, StorageClass, StatefulSet volumes |
 | 8 | `cluster` | etcd backup and restore, kubeadm, certificates |
 | 9 | `workloads` | Workloads and scheduling: rollouts, Jobs, affinity |
+| 10 | `gateway` | Ingress, Gateway API, and CNI troubleshooting |
 
 > **Upgrading from an earlier version?** The old numbered commands — `exam6`,
 > `q6 4`, `grade7`, `explain3 2` — all still work exactly as before. Nothing
@@ -255,7 +256,7 @@ Grading is idempotent and reads live state, so it is always current.
 
 ---
 
-## The nine exams
+## The ten exams
 
 They are independent and can all be active on the same cluster at once —
 separate namespaces, chart sources and answer directories.
@@ -266,7 +267,7 @@ separate namespaces, chart sources and answer directories.
 |---|---|---|
 | Troubleshooting | 30% | `netpol`, `nodes`, `tshoot` |
 | Cluster Architecture & Installation | 25% | `helm-core`, `helm-values`, `helm-oci`, `cluster` |
-| Services & Networking | 20% | `netpol` |
+| Services & Networking | 20% | `netpol`, `gateway` |
 | Workloads & Scheduling | 15% | `workloads` |
 | Storage | 10% | `storage` |
 
@@ -279,13 +280,16 @@ separate namespaces, chart sources and answer directories.
 | `netpol`, `tshoot`, `storage`, `workloads` | images only | plain `kubectl` |
 | `nodes` | images only | **two nodes + passwordless ssh to the worker** |
 | `cluster` | no | **must run on the control plane node** |
+| `gateway` | **yes**, once | **two nodes + passwordless ssh**; fetches the Gateway API CRDs |
 
-> ### ⚠️ Two exams break your cluster on purpose
+> ### ⚠️ Three exams break your cluster on purpose
 >
 > `nodes` stops the kubelet on a worker and corrupts its configuration.
-> `tshoot` takes `kube-scheduler` down. Both back up every file they touch and
-> both have a restore command — `exam5restore` and `exam6restore` — but do not
-> point either at a cluster you care about.
+> `tshoot` takes `kube-scheduler` down. `gateway` disables the CNI
+> configuration on a worker, so the node goes NotReady and no new pod can be
+> created there. All three back up every file they touch and all three have a
+> restore command — `exam5restore`, `exam6restore`, `exam10restore` — but do not
+> point any of them at a cluster you care about.
 >
 > Neither breaks `kube-apiserver` or `etcd`: that would take `kubectl` down and
 > the grader with it. Where those failures matter, the walkthroughs cover what
@@ -586,6 +590,53 @@ that is the rule working. And without metrics-server the HPA reports
 `<unknown>/70%` and never scales; that is a missing add-on, not a broken object,
 so task 6 is graded on the spec.
 
+### Exam 10 — Ingress, the Gateway API, and the CNI
+
+Seeded by `setup10.sh`. **Breaks pod networking on a worker.** Three sections in
+one exam, because on a real cluster they are one problem: something has to
+publish the service, something has to route to it, and something has to give the
+pods addresses in the first place.
+
+| # | Pts | Task | Key idea |
+|---|---|---|---|
+| 1 | 6 | An IngressClass, and make it the default | `spec.controller` vs `metadata.name` |
+| 2 | 9 | An Ingress with two paths | the backend port is the **service** port |
+| 3 | 8 | Fix an Ingress written for an old cluster | the pre-1.18 class annotation, `pathType` |
+| 4 | 8 | Serve it over TLS | `create secret tls`, and SNI matching the rule host |
+| 5 | 8 | A route that 503s although the pods are healthy | a Service selector that matches nothing |
+| 6 | 8 | A GatewayClass and a Gateway | the three-persona split, `allowedRoutes` |
+| 7 | 9 | An HTTPRoute attached to it | `parentRefs`, and how silently it fails |
+| 8 | 8 | Split 90/10 between two versions | weights are relative, and share one rule |
+| 9 | 7 | Repair an orphaned HTTPRoute | a dangling parent is a valid object |
+| 10 | 7 | Say why the node lost its network | `cni plugin not initialized`, and who reports it |
+| 11 | 9 | Put the CNI configuration back | lexical order, `.disabled`, restart the *runtime* |
+| 12 | 7 | Prove it by getting a pod an IP | Ready ≠ working; where the pod CIDR comes from |
+| 13 | 6 | Make a CNI DaemonSet run everywhere | `operator: Exists`, `hostNetwork`, `system-node-critical` |
+
+**No controller is installed, and that is deliberate.** There is no
+ingress-nginx and nothing implements the GatewayClass, so Ingresses keep an
+empty `ADDRESS` for ever and Gateways stay `PROGRAMMED=Unknown`. Every routing
+task is graded on the object you wrote — which is exactly how the CKA grades
+them. Chasing a missing address is the trap, not the task.
+
+**Ingress and Gateway API side by side.** The same two hostnames are routed
+twice, once each way, so the mapping is unavoidable: `ingressClassName` becomes
+`parentRefs`, `pathType: Prefix` becomes `type: PathPrefix`, and the thing
+Ingress could never express — a weighted split, a cross-namespace backend — is a
+first-class field. The Gateway API entered the CKA curriculum in 2026 and the
+questions reported so far are precisely this: attach a route, split traffic,
+work out why a route does nothing.
+
+**The CNI section is the destructive half.** Every file in `/etc/cni/net.d` is
+renamed out of the way and an invalid config that sorts first is planted in
+their place. The node goes NotReady and no new pod can start there — while every
+pod already running carries on, because its network namespace was configured
+before the fault. That asymmetry is the thing to recognise: a cluster in this
+state looks healthy on a dashboard and cannot deploy anything.
+
+Task 10 asks for the diagnosis and task 11 repairs it, in that order, because
+repairing it erases the evidence. `exam10restore` puts the node back.
+
 ### Task ordering
 
 Some tasks depend on others. Each exam's `examhelp` spells its own out; the
@@ -602,6 +653,7 @@ short version:
 | `storage` | 1 → 6; 4 → 5 |
 | `cluster` | 1 → 2 → 3 is a chain; 8 → 9 are a pair |
 | `workloads` | 1 before 5; 13 last |
+| `gateway` | **10 before 11** — the repair erases the evidence; 11 before 12; 1 before 2 and 3; 6 before 7, 8 and 9 |
 
 `next` follows these automatically — it always hands you the lowest-numbered
 unsolved task.
@@ -696,7 +748,7 @@ resolve.
 ### Requirements
 
 - a real cluster and `kubectl` that can reach it (Killercoda, kind, minikube, k3s)
-- for exam 5 only: **two nodes**, passwordless `ssh` to the worker, and root
+- for exams 5 and 10: **two nodes**, passwordless `ssh` to the worker, and root
   there. For exam 8: run it **on the control plane**, with `etcdctl`/`etcdutl`
   and `kubeadm` available — `setup8.sh` checks each and tells you what is
   missing rather than failing obscurely later. On a single-node cluster the only node is the control plane, and
@@ -705,7 +757,7 @@ resolve.
 - `bash` 3.2 or newer
 - Helm 3.10 or newer — installed automatically if absent
   (exam 3 task 11 uses `--set-json`, added in 3.10)
-- internet access, for exam 3 only
+- internet access, for exam 3 and for exam 10's Gateway API CRDs
 
 All three exams are tested on **Helm 3 and Helm 4**. Helm 4 turned several Helm 3
 flags into defaults and then removed the flags, so passing them is now a hard
@@ -800,6 +852,25 @@ the wait.
 `kubectl get netpol <name> -o yaml` and compare the *structure*, not the text.
 Count the dashes under `from:`; one element means AND, two mean OR. `explain N`
 ends with the exact distinction the grader makes.
+
+**Exam 10: tasks 6 to 9 score zero and `kubectl get gateway` says the resource
+does not exist** — the Gateway API is not part of Kubernetes. It ships as CRDs
+on its own release schedule, and `setup10.sh` installs them for you if it can
+reach GitHub. If it could not, install them by hand and re-grade:
+
+```bash
+kubectl apply --server-side -f \
+  https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+```
+
+**Exam 10: my Ingress never gets an ADDRESS and my Gateway is never Programmed**
+— nothing is installed to give them one, on purpose. Both are graded on the
+object you wrote, as they are on the real exam.
+
+**Exam 10: I want the broken node back** — `exam10restore` removes the planted
+config, un-disables the real ones, restarts the container runtime and waits for
+`Ready`. If the node is still NotReady afterwards, check that nothing is left:
+`ssh node01 ls -l /etc/cni/net.d`.
 
 **Task 1 of exam 2 fails after a session restart** — the local chart repo server
 died. `exam2reset` restarts it.

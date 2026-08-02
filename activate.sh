@@ -16,7 +16,7 @@
 #  have to encode the exam into the command name.
 #
 #  Names:  helm-core helm-values helm-oci netpol nodes
-#          tshoot storage cluster workloads
+#          tshoot storage cluster workloads gateway
 #
 #  The old numbered commands (exam6, q6 4, grade7 ...) still work and are
 #  defined below, so nothing breaks mid-session.
@@ -127,6 +127,16 @@ workinfo()   { "$EXAM_HOME/exam9.sh" workinfo; }
 exam9help()  { "$EXAM_HOME/exam9.sh" help; }
 exam9reset() { "$EXAM_HOME/setup9.sh"; }
 
+exam10()        { "$EXAM_HOME/exam10.sh" "$@"; }
+q10()           { "$EXAM_HOME/exam10.sh" q "$@"; }
+grade10()       { "$EXAM_HOME/exam10.sh" grade "$@"; }
+solve10()       { "$EXAM_HOME/exam10.sh" solve "$@"; }
+explain10()     { "$EXAM_HOME/exam10.sh" explain "$@"; }
+edgeinfo()      { "$EXAM_HOME/exam10.sh" edgeinfo; }
+exam10restore() { "$EXAM_HOME/exam10.sh" restore; }
+exam10help()    { "$EXAM_HOME/exam10.sh" help; }
+exam10reset()   { "$EXAM_HOME/setup10.sh"; }
+
 # Tab completion: task numbers.
 if command -v complete >/dev/null 2>&1; then
   _exam_qnums() {
@@ -142,11 +152,12 @@ if command -v complete >/dev/null 2>&1; then
   complete -F _exam_qnums q7 grade7 solve7 explain7
   complete -F _exam_qnums q8 grade8 solve8 explain8
   complete -F _exam_qnums q9 grade9 solve9 explain9
+  complete -F _exam_qnums q10 grade10 solve10 explain10
 
   _cka_complete() {
     local cur prev names verbs
     cur="${COMP_WORDS[COMP_CWORD]}"; prev="${COMP_WORDS[COMP_CWORD-1]}"
-    names="helm-core helm-values helm-oci netpol nodes tshoot storage cluster workloads 1 2 3 4 5 6 7 8 9"
+    names="helm-core helm-values helm-oci netpol nodes tshoot storage cluster workloads gateway 1 2 3 4 5 6 7 8 9 10"
     verbs="use scores list q next grade explain solve info reset examhelp help version"
     case "$prev" in
       use)  COMPREPLY=( $(compgen -W "$names" -- "$cur") ) ;;

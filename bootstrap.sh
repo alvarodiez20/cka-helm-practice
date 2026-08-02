@@ -2,7 +2,7 @@
 # Downloads the exams and prepares the environment in one go.
 #   curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
 #
-# All nine exams are installed either way. EXAM only decides which one is
+# All ten exams are installed either way. EXAM only decides which one is
 # SEEDED — built in the cluster — before you are handed the prompt. Since
 # 'cka use <name>' seeds an exam on selection, this is a convenience, not a
 # requirement: it exists so you can skip building an exam you did not want.
@@ -11,7 +11,8 @@
 #   curl -sL .../bootstrap.sh | EXAM=7 bash       seeds storage instead
 #   curl -sL .../bootstrap.sh | EXAM=none bash    installs, seeds nothing
 #
-# EXAM=5 breaks a worker node and EXAM=6 breaks kube-scheduler, on purpose.
+# EXAM=5 breaks a worker node, EXAM=6 breaks kube-scheduler, and EXAM=10
+# disables a worker's CNI — all on purpose.
 set -uo pipefail
 
 GH_USER="${GH_USER:-alvarodiez20}"
@@ -32,7 +33,7 @@ mkdir -p "$DEST" && cd "$DEST" || exit 1
 FILES="setup.sh exam.sh setup2.sh exam2.sh setup3.sh exam3.sh
 setup4.sh exam4.sh setup5.sh exam5.sh setup6.sh exam6.sh
 setup7.sh exam7.sh setup8.sh exam8.sh setup9.sh exam9.sh
-cka.sh activate.sh VERSION"
+setup10.sh exam10.sh cka.sh activate.sh VERSION"
 
 MISSING=""
 for f in $FILES; do
@@ -53,7 +54,7 @@ case "$EXAM" in
     echo "  Installed. Nothing seeded yet — selecting an exam builds it:"
     echo
     echo "    source ${DEST}/activate.sh"
-    echo "    cka              # the dashboard: all nine, and what is seeded"
+    echo "    cka              # the dashboard: all ten, and what is seeded"
     echo "    cka use netpol   # select one; it is built if it is not there"
     echo
     exit 0 ;;
@@ -77,5 +78,6 @@ case "$EXAM" in
   7) exec ./setup7.sh ;;
   8) exec ./setup8.sh ;;
   9) exec ./setup9.sh ;;
+  10) exec ./setup10.sh ;;
   *) exec ./setup.sh ;;
 esac
