@@ -1,0 +1,64 @@
+name: release
+
+# Fires when a v* tag is pushed. scripts/release.sh creates that tag locally;
+# this turns it into a GitHub Release whose body is the CHANGELOG section for
+# that version, so the release notes and the changelog can never disagree —
+# they are the same text.
+
+on:
+  push:
+    tags: ['v[0-9]*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: publish the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: the tag must match VERSION
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(tr -d '[:space:]' < VERSION)"
+          echo "  tag     $tag"
+          echo "  VERSION $file"
+          if [ "$tag" != "$file" ]; then
+            echo "  ✘ tag v$tag was pushed at a commit whose VERSION says $file."
+            echo "    Tag the release commit, not an earlier one."
+            exit 1
+          fi
+
+      - name: everything CI checks, again, at the tagged commit
+        run: |
+          ./scripts/release.sh --check
+          ./scripts/audit-graders.sh
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          ./scripts/changelog-section.sh "$ver" > /tmp/notes.md
+          # A release with empty notes is worse than no release: the CHANGELOG
+          # link points at it and says nothing.
+          [ -s /tmp/notes.md ] || { echo "  ✘ no CHANGELOG content for $ver"; exit 1; }
+          {
+            echo
+            echo "---"
+            echo
+            echo "Install or upgrade:"
+            echo
+            echo '```bash'
+            echo "curl -sL https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/bootstrap.sh | bash"
+            echo "source ~/cka-helm-practice/activate.sh"
+            echo '```'
+          } >> /tmp/notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file /tmp/notes.md \
+            --verify-tag

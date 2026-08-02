@@ -9,6 +9,72 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.11.0] — 2026-08-02
+
+Versioning was documented but not enforced. This makes it real.
+
+### Added
+
+- **Every version in the CHANGELOG is now an annotated git tag.** Only
+  `v1.0.0` existed, so the fifteen `releases/tag/vX.Y.Z` links at the bottom of
+  this file all 404'd. Each tag carries its CHANGELOG section as the message
+  and is dated to the commit it points at.
+
+- **`scripts/release.sh`** — the only thing that should ever change a version.
+  A version lives in four places here, and they have drifted apart by hand more
+  than once during this project: `VERSION`, the README badge, the `## [X.Y.Z]`
+  heading, and the tag.
+
+      ./scripts/release.sh --check          verify, change nothing
+      ./scripts/release.sh minor            1.10.0 -> 1.11.0
+      ./scripts/release.sh 2.3.4            an explicit version
+      ./scripts/release.sh patch --dry-run  show the diff, write nothing
+
+  It refuses to run if those files have uncommitted changes, if the tag exists,
+  or — deliberately — if there is no CHANGELOG entry for the new version yet.
+  It will not invent one: that text becomes the tag message and the body of the
+  GitHub Release, and a generated entry says nothing.
+
+- **`scripts/changelog-section.sh`** — extracts one entry's body, so the
+  release notes, the tag message and the GitHub Release are the same text
+  rather than three versions of it.
+
+- **`scripts/audit-graders.sh`** — looks for graders that FAIL OPEN. This is
+  the bug this repo keeps producing: six have been found and fixed, and every
+  one had the same shape, a check whose deciding expression is trivially true
+  when kubectl returns nothing. One exam scored 22/100 against a cluster that
+  did not exist.
+
+  The audit runs every grader with an empty `PATH` — no kubectl, no helm, no
+  ssh — and requires all ten to score exactly 0/100. That check cannot produce
+  a false positive and catches shapes no pattern match would. A static pass
+  then flags any case arm that decides on a negation without first proving the
+  cluster is there. Both were confirmed against a deliberately planted
+  fail-open grader.
+
+- **CI on GitHub Actions.** `bash -n` on every script one file at a time
+  (`bash -n a b c` parses only the first and silently checks nothing), an
+  executable-bit check against the git index, the grader audit, the version
+  consistency check, and a consistency check between `bootstrap.sh`'s download
+  list, `cka.sh`'s dispatcher table and the files actually in the repo — a file
+  renamed in one and not the other 404s at install time on somebody else's
+  machine, which is the worst place to find out.
+
+  shellcheck runs advisory rather than blocking. The existing backlog has never
+  been triaged and these scripts split words and glob unquoted on purpose in
+  places, so a blocking run would go red on style rather than on anything real.
+
+- **A release workflow** that fires on a `v*` tag, refuses to publish if the
+  tag disagrees with `VERSION` at that commit, re-runs the full audit, and
+  creates the GitHub Release from the CHANGELOG section.
+
+### Fixed
+
+- **`cka.sh` was committed non-executable**, so `cka` failed with `permission
+  denied` for anyone who cloned the repo. `bootstrap.sh` chmods everything
+  after downloading, which is why it only ever broke for clones — and why it
+  went unnoticed. Found by the new CI check, on its first run.
+
 ## [1.10.0] — 2026-08-02
 
 Ten exams, 130 tasks, 1000 points.
@@ -692,6 +758,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[1.11.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.11.0
 [1.10.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.10.0
 [1.9.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.9.0
 [1.8.2]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.2

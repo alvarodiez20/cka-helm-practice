@@ -1,0 +1,113 @@
+name: ci
+
+# Every script here runs on somebody's exam cluster, usually as root, often on
+# a node they cannot easily rebuild. A broken quote or a grader that awards
+# points for nothing is worth catching before it is pushed, not after.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell:
+    name: shell syntax and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bash -n every script
+        run: |
+          fail=0
+          # One file per invocation: 'bash -n a b c' parses only the first and
+          # treats the rest as positional arguments, which silently checks
+          # nothing. That mistake is easy to make and impossible to notice.
+          while IFS= read -r f; do
+            if bash -n "$f" 2>/tmp/err; then
+              echo "  ok   $f"
+            else
+              echo "  FAIL $f"; sed 's/^/       /' /tmp/err; fail=1
+            fi
+          done < <(git ls-files '*.sh')
+          exit $fail
+
+      - name: every script is executable
+        run: |
+          # The mode in the INDEX is what ships, not the mode in the working
+          # tree — cka.sh was committed 100644 and every 'git clone' of this
+          # repo got a 'cka: permission denied'. bootstrap.sh chmods after
+          # download, so it only broke for people who cloned.
+          fail=0
+          while IFS= read -r f; do
+            [ "$(git ls-files -s "$f" | cut -d' ' -f1)" = "100755" ] \
+              || { echo "  not executable in the index: $f"; fail=1; }
+          done < <(git ls-files '*.sh')
+          [ $fail = 0 ] || echo "  (fix: chmod +x <file> && git update-index --chmod=+x <file>)"
+          exit $fail
+
+  shellcheck:
+    name: shellcheck (advisory)
+    runs-on: ubuntu-latest
+    # ADVISORY ON PURPOSE, for now. These scripts lean on word splitting and
+    # unquoted globs deliberately in places, and the existing backlog has never
+    # been triaged, so a blocking run would go red on style rather than on
+    # anything that matters. Read the output, fix what is real, and when it is
+    # clean drop continue-on-error and let it block.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+      - name: warnings and above
+        run: |
+          git ls-files '*.sh' \
+            | xargs -r shellcheck -S warning -e SC2086,SC2181,SC1090,SC1091
+
+  graders:
+    name: graders must fail closed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: no grader awards points without a cluster
+        run: ./scripts/audit-graders.sh
+
+  version:
+    name: version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # release.sh --check looks at every tag
+      - name: VERSION, README badge, CHANGELOG and tags agree
+        run: ./scripts/release.sh --check
+
+  bootstrap:
+    name: bootstrap installs a complete set
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: every file bootstrap.sh fetches exists in the repo
+        run: |
+          # bootstrap.sh downloads a hard-coded list from raw.githubusercontent.
+          # A file renamed here and not there produces a 404 at install time on
+          # somebody else's machine, which is the worst place to find out.
+          # FILES spans four lines; collapse the newlines or the membership
+          # test below silently misses every entry that sits at a line edge.
+          list="$(sed -n '/^FILES="/,/"$/p' bootstrap.sh | sed 's/^FILES="//; s/"$//' | tr '\n' ' ')"
+          fail=0
+          for f in $list; do
+            [ -f "$f" ] || { echo "  bootstrap.sh fetches '$f', which is not in the repo"; fail=1; }
+          done
+          # And the reverse: an exam added here but not listed there would
+          # install as a task list with no seed behind it.
+          for f in $(git ls-files 'exam*.sh' 'setup*.sh'); do
+            case " $list " in *" $f "*) ;; *) echo "  '$f' is in the repo but bootstrap.sh does not fetch it"; fail=1 ;; esac
+          done
+          # Every exam in the dispatcher table must exist as a pair of files.
+          sed -n '/^EXAMS="/,/"$/p' cka.sh | grep -oE '^[0-9]+\|[a-z-]+\|[^|]+\|[^|]+' \
+            | while IFS='|' read -r n name exam setup; do
+                [ -f "$exam" ]  || { echo "  cka.sh lists $name -> $exam, which does not exist"; exit 1; }
+                [ -f "$setup" ] || { echo "  cka.sh lists $name -> $setup, which does not exist"; exit 1; }
+              done || fail=1
+          [ $fail = 0 ] && echo "  bootstrap.sh, cka.sh and the repo agree"
+          exit $fail

@@ -4,11 +4,12 @@
 
 **Ten hands-on CKA exams covering every domain of the curriculum. You solve them against a real cluster, and the grader inspects the cluster — not your answers.**
 
-[![Version](https://img.shields.io/badge/version-1.10.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.11.0-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Exams](https://img.shields.io/badge/exams-10-orange?style=flat-square)](#the-ten-exams)
 [![Tasks](https://img.shields.io/badge/tasks-130-orange?style=flat-square)](#the-ten-exams)
 [![Pass mark](https://img.shields.io/badge/pass%20mark-66-brightgreen?style=flat-square)](#scoring)
+[![CI](https://github.com/alvarodiez20/cka-helm-practice/actions/workflows/ci.yml/badge.svg)](https://github.com/alvarodiez20/cka-helm-practice/actions/workflows/ci.yml)
 
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://www.cncf.io/training/certification/cka/)
 [![Helm](https://img.shields.io/badge/Helm-3.x%20%7C%204.x-0F1689?style=flat-square&logo=helm&logoColor=white)](https://helm.sh)
@@ -893,7 +894,57 @@ if existing answers or scripts may behave differently, MINOR for new tasks or
 commands, PATCH for fixes. See [CHANGELOG.md](CHANGELOG.md), or ask:
 
 ```bash
-exam version
+cka version
+```
+
+Every released version is an annotated git tag, and every tag has a
+[GitHub Release](https://github.com/alvarodiez20/cka-helm-practice/releases)
+whose notes are that version's CHANGELOG entry.
+
+### Cutting a release
+
+A version lives in four places — `VERSION`, the README badge, the `## [X.Y.Z]`
+CHANGELOG heading, and the git tag — so one command changes all four:
+
+```bash
+# 1. write the CHANGELOG entry first. The script will not invent one:
+#    that text becomes the tag message and the GitHub Release body.
+$EDITOR CHANGELOG.md
+
+# 2. then
+./scripts/release.sh minor              # or major / patch / 2.3.4
+./scripts/release.sh minor --dry-run    # show the diff, write nothing
+
+# 3. push the tag; the release workflow publishes from it
+git push && git push origin v1.11.0
+```
+
+`./scripts/release.sh --check` verifies the four agree and is what CI runs on
+every push. It refuses to release from a dirty tree, over an existing tag, or
+without a CHANGELOG entry.
+
+### What CI checks
+
+| Job | What it catches |
+|---|---|
+| `shell` | a syntax error, or a script committed without its executable bit |
+| `graders` | a grader that awards points with no cluster — see below |
+| `version` | `VERSION`, the badge, the CHANGELOG and the tags disagreeing |
+| `bootstrap` | a file `bootstrap.sh` fetches that is not in the repo, or an exam in the repo it does not fetch |
+| `shellcheck` | advisory only, for now |
+
+`scripts/audit-graders.sh` is the one worth knowing about. **Graders here must
+fail closed**, and six have not: each had the same shape, a check whose
+deciding expression is trivially true when `kubectl` returns nothing —
+`[ "$(kubectl ...)" != "true" ]` is true when the command printed nothing at
+all. One exam awarded 22 points against a cluster that did not exist.
+
+The audit runs every grader with an empty `PATH` and requires all ten to score
+exactly `0/100`, then statically flags any task that decides on a negation
+without first proving the cluster is there. Run it yourself:
+
+```bash
+./scripts/audit-graders.sh
 ```
 
 ## License
