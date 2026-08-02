@@ -43,23 +43,38 @@ for ns in $NS_LIST np-probe; do
   kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1
 done
 # Namespaces terminate asynchronously; creating one while it is Terminating
-# fails, so wait for them to actually go.
-for i in $(seq 1 30); do
-  still="$(kubectl get ns $NS_LIST np-probe 2>/dev/null | grep -c . || true)"
-  [ "${still:-0}" -eq 0 ] && break
+# fails, so wait for them to actually go. 4 minutes, because a namespace full
+# of pods with a 30s grace period is routinely slower than a minute.
+for i in $(seq 1 120); do
+  still=""
+  for ns in $NS_LIST np-probe; do
+    kubectl get ns "$ns" >/dev/null 2>&1 && still="$still $ns"
+  done
+  [ -z "$still" ] && break
   sleep 2
 done
+if [ -n "$still" ]; then
+  warn "still Terminating after 4 min:$still"
+  warn "forcing finalizers off"
+  for ns in $still; do
+    kubectl get ns "$ns" -o json 2>/dev/null \
+      | tr -d '\n' | sed 's/"finalizers": *\[[^]]*\]/"finalizers": []/' \
+      | kubectl replace --raw "/api/v1/namespaces/$ns/finalize" -f - >/dev/null 2>&1
+  done
+  sleep 5
+fi
 rm -rf "$ANS" "$EX4"; mkdir -p "$ANS" "$EX4"
 ok "previous state removed"
 
 # ── 3. Namespaces, with the labels the tasks select on ──────
 # NetworkPolicy has no way to name a namespace: namespaceSelector matches
 # LABELS. That is why every namespace here carries one.
-kubectl create ns frontend  >/dev/null 2>&1
-kubectl create ns backend   >/dev/null 2>&1
-kubectl create ns monitoring >/dev/null 2>&1
-kubectl create ns shop      >/dev/null 2>&1
-kubectl create ns netdebug  >/dev/null 2>&1
+for ns in $NS_LIST; do
+  if ! kubectl get ns "$ns" >/dev/null 2>&1; then
+    out="$(kubectl create ns "$ns" 2>&1)" \
+      || die "could not create namespace '$ns': $out"
+  fi
+done
 kubectl label ns frontend   tier=frontend --overwrite >/dev/null 2>&1
 kubectl label ns backend    tier=backend --overwrite >/dev/null 2>&1
 kubectl label ns monitoring purpose=monitoring --overwrite >/dev/null 2>&1
@@ -68,8 +83,9 @@ ok "namespaces created and labelled"
 
 mkpod(){ # name ns image labels [args...]
   local name="$1" ns="$2" img="$3" labels="$4"; shift 4
-  kubectl -n "$ns" run "$name" --image="$img" --labels="$labels" \
-    --restart=Never "$@" >/dev/null 2>&1
+  local out
+  out="$(kubectl -n "$ns" run "$name" --image="$img" --labels="$labels" \
+    --restart=Never "$@" 2>&1)" || warn "pod $name/$ns was NOT created: $out"
 }
 
 say "creating workloads (images may need pulling, ~60s)..."
