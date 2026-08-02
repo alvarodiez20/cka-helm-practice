@@ -138,6 +138,41 @@ cka scores             # grade all nine and show every score (takes a minute)
 
 **Tab completion** works on exam names, verbs and task numbers.
 
+### Re-seeding an exam
+
+Every exam can be reset to its starting state at any time, as many times as you
+like:
+
+```bash
+reset                  # re-seed the exam you have selected
+cka netpol reset       # re-seed a specific one
+exam4reset             # the same thing, by number
+```
+
+Re-seeding **deletes the exam's namespaces and everything in them**, then
+recreates them. Anything you wrote lives in those namespaces, so a reset throws
+your work away — that is the point of it, but it is not undoable.
+
+It is not instant. Kubernetes deletes a namespace asynchronously, and pods
+running `sleep` ignore `SIGTERM` and take their full 30-second grace period, so
+a re-seed can spend a minute or two just waiting for the previous run to
+disappear before it creates anything. **Let it finish.** If you interrupt it, or
+run two seeds at once, you can end up with namespaces stuck mid-delete.
+
+The seed will not lie to you about this. If a namespace cannot be created it
+stops with `✘ could not create namespace ...` or `✘ namespace ... is stuck in
+Terminating` and exits non-zero, rather than reporting success over a half-built
+exam. If you see that, wait for the namespace to go and run the seed again:
+
+```bash
+kubectl get ns                     # look for anything Terminating
+reset
+```
+
+Exams do not interfere with each other. Each one owns its own namespaces and its
+own `~/answersN` directory, so seeding exam 7 never disturbs exam 4, and you can
+have all nine seeded at once.
+
 ### The names
 
 | # | Name | Covers |
@@ -660,6 +695,43 @@ directories.
 
 **Every task suddenly shows ✘** — the Killercoda session expired and took the
 cluster with it. Re-seed the selected exam with `reset`, or any of them with `cka <name> reset`.
+
+**A task refers to a pod or namespace that does not exist** — the seed did not
+finish. Check what is actually there:
+
+```bash
+kubectl get ns
+kubectl get pods -A
+```
+
+If a namespace the exam needs is missing or `Terminating`, wait for it to
+disappear and run `reset` again. This is most likely if you re-seeded on top of
+a previous run and interrupted it, or ran two seeds at the same time. See
+[Re-seeding an exam](#re-seeding-an-exam).
+
+> Versions before 1.8.2 could hit this on their own: the seed deleted the old
+> namespaces without waiting long enough, then recreated them with all kubectl
+> output discarded, so a failed create was invisible and the script still
+> printed `✔`. Every seed now waits properly and exits non-zero instead. If you
+> installed before then, re-run `bootstrap.sh` to pick up the fix.
+
+**The seed stops with `namespace ... is stuck in Terminating`** — something in
+that namespace has a finalizer that is not completing. The seed already tries to
+clear it. If it still will not go, find what is holding it:
+
+```bash
+kubectl get ns <name> -o jsonpath='{.spec.finalizers}{"\n"}'
+kubectl api-resources --verbs=list --namespaced -o name \
+  | xargs -n1 kubectl get -n <name> --ignore-not-found 2>/dev/null
+```
+
+On a lab cluster the blunt fix is to drop the finalizers and re-seed:
+
+```bash
+kubectl get ns <name> -o json \
+  | tr -d '\n' | sed 's/"finalizers": *\[[^]]*\]/"finalizers": []/' \
+  | kubectl replace --raw "/api/v1/namespaces/<name>/finalize" -f -
+```
 
 **Exam 4: my policies are all correct but nothing is ever blocked** — your CNI
 does not enforce NetworkPolicy. `netcheck` says so explicitly. Grading is

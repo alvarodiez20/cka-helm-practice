@@ -21,6 +21,52 @@ ok(){ printf "  ${G}✔${N} %s\n" "$*"; }
 warn(){ printf "  ${Y}!${N} %s\n" "$*"; }
 die(){ printf "  ${R}✘${N} %s\n" "$*"; exit 1; }
 
+# ── Namespace lifecycle ─────────────────────────────────────
+# Namespaces terminate asynchronously, and creating one while it is still
+# Terminating fails. With kubectl output suppressed that failure is invisible:
+# the seed carries on, every workload destined for that namespace silently
+# fails to be created, and the script still reports success. So: wait for the
+# deletes to finish, force the finalizers off if something is wedged, and fail
+# loudly if a namespace still cannot be created.
+ns_wipe(){ # ns...
+  local ns still i
+  for ns in "$@"; do
+    kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1
+  done
+  still=""
+  for i in $(seq 1 120); do            # up to 4 minutes
+    still=""
+    for ns in "$@"; do
+      kubectl get ns "$ns" >/dev/null 2>&1 && still="$still $ns"
+    done
+    [ -z "$still" ] && return 0
+    sleep 2
+  done
+  warn "namespaces still Terminating after 4 min:$still"
+  warn "forcing their finalizers off"
+  for ns in $still; do
+    kubectl get ns "$ns" -o json 2>/dev/null \
+      | tr -d '\n' | sed 's/"finalizers": *\[[^]]*\]/"finalizers": []/' \
+      | kubectl replace --raw "/api/v1/namespaces/${ns}/finalize" -f - >/dev/null 2>&1
+  done
+  sleep 5
+}
+
+ns_make(){ # ns...
+  # NOTE: "kubectl get ns" SUCCEEDS for a namespace that is Terminating, so
+  # existence is not the test — the phase is. A Terminating namespace cannot
+  # hold objects, so treat it as fatal rather than carrying on into a seed
+  # that will quietly create nothing.
+  local ns out phase
+  for ns in "$@"; do
+    phase="$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)"
+    [ "$phase" = "Active" ] && continue
+    [ -n "$phase" ] && die "namespace '$ns' is stuck in $phase — delete it by hand, then re-run"
+    out="$(kubectl create ns "$ns" 2>&1)" \
+      || die "could not create namespace '$ns': $out"
+  done
+}
+
 echo
 printf "%s  Preparing the Helm exam environment%s\n\n" "$BO" "$N"
 
@@ -127,10 +173,8 @@ helm repo update >/dev/null 2>&1
 ok "repo '$REPO_NAME' added"
 
 # ── 4. Initial exam state ───────────────────────────────────
-for ns in apps hidden-77 web dev; do kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1; done
-sleep 3
-kubectl create ns apps      >/dev/null 2>&1
-kubectl create ns hidden-77 >/dev/null 2>&1
+ns_wipe apps hidden-77 web dev
+ns_make apps hidden-77
 
 # 'legacy': three revisions, the current one points at an image that does not exist
 helm install legacy "$REPO_NAME/demo-app" --version 0.1.0 -n apps \

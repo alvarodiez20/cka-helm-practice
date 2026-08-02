@@ -9,6 +9,46 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [1.8.2] — 2026-08-02
+
+Re-seeding was not reliable, and worse, it did not admit when it had failed.
+Reported from a Killercoda run of exam 4 where `backend` existed and the other
+four namespaces did not, while the seed had printed `✔` for every step.
+
+### Fixed
+
+- **Seeds could silently build half an exam.** Every `setupN.sh` deleted its
+  namespaces with `--wait=false` and then recreated them with all kubectl output
+  sent to `/dev/null`, under `set -uo pipefail` with no `-e` and no exit-code
+  checks. A namespace still `Terminating` made `kubectl create ns` fail, that
+  failure was invisible, and every workload destined for it failed too — while
+  the script went on to print `✔ namespaces created and labelled` and
+  `✔ workloads up`. Exam 4 showed it most clearly: `backend` holds only nginx
+  pods, which exit on `SIGTERM` immediately, so it finished terminating and was
+  recreated; `frontend`, `monitoring`, `netdebug` and `shop` hold `busybox
+  sleep` pods, which ignore `SIGTERM` and take the full 30-second grace period,
+  so they were still `Terminating` when the 60-second wait expired and were
+  never recreated at all.
+- **All nine seeds now share `ns_wipe` and `ns_make`.** `ns_wipe` waits up to
+  four minutes for the deletes to complete and clears finalizers on anything
+  wedged; `ns_make` checks `status.phase` rather than mere existence — `kubectl
+  get ns` succeeds for a `Terminating` namespace — and calls `die` if a
+  namespace cannot be created or is stuck. A seed that cannot build the exam now
+  exits non-zero instead of claiming success.
+- **`setup4.sh` reported missing pods as slow ones.** When a pod had never been
+  created, the readiness loop said `not Ready yet — it may still be pulling`,
+  which sends you to `kubectl describe` for an image problem that does not
+  exist. It now distinguishes absent from pending, says `DOES NOT EXIST`, and
+  fails the seed. Pod creation failures are also surfaced with the real kubectl
+  error rather than discarded.
+
+### Documentation
+
+- New **Re-seeding an exam** section: what `reset` destroys, why it is slow, and
+  why interrupting it is what leaves namespaces stuck.
+- New troubleshooting entries for a task referring to objects that do not exist,
+  and for a namespace wedged in `Terminating`.
+
 ## [1.8.1] — 2026-07-30
 
 Verified exams 5 to 9 on a live Killercoda cluster (Kubernetes v1.35.1, Cilium,

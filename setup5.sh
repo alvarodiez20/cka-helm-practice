@@ -29,6 +29,52 @@ ok(){ printf "  ${G}✔${N} %s\n" "$*"; }
 warn(){ printf "  ${Y}!${N} %s\n" "$*"; }
 die(){ printf "  ${R}✘${N} %s\n" "$*"; exit 1; }
 
+# ── Namespace lifecycle ─────────────────────────────────────
+# Namespaces terminate asynchronously, and creating one while it is still
+# Terminating fails. With kubectl output suppressed that failure is invisible:
+# the seed carries on, every workload destined for that namespace silently
+# fails to be created, and the script still reports success. So: wait for the
+# deletes to finish, force the finalizers off if something is wedged, and fail
+# loudly if a namespace still cannot be created.
+ns_wipe(){ # ns...
+  local ns still i
+  for ns in "$@"; do
+    kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1
+  done
+  still=""
+  for i in $(seq 1 120); do            # up to 4 minutes
+    still=""
+    for ns in "$@"; do
+      kubectl get ns "$ns" >/dev/null 2>&1 && still="$still $ns"
+    done
+    [ -z "$still" ] && return 0
+    sleep 2
+  done
+  warn "namespaces still Terminating after 4 min:$still"
+  warn "forcing their finalizers off"
+  for ns in $still; do
+    kubectl get ns "$ns" -o json 2>/dev/null \
+      | tr -d '\n' | sed 's/"finalizers": *\[[^]]*\]/"finalizers": []/' \
+      | kubectl replace --raw "/api/v1/namespaces/${ns}/finalize" -f - >/dev/null 2>&1
+  done
+  sleep 5
+}
+
+ns_make(){ # ns...
+  # NOTE: "kubectl get ns" SUCCEEDS for a namespace that is Terminating, so
+  # existence is not the test — the phase is. A Terminating namespace cannot
+  # hold objects, so treat it as fatal rather than carrying on into a seed
+  # that will quietly create nothing.
+  local ns out phase
+  for ns in "$@"; do
+    phase="$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)"
+    [ "$phase" = "Active" ] && continue
+    [ -n "$phase" ] && die "namespace '$ns' is stuck in $phase — delete it by hand, then re-run"
+    out="$(kubectl create ns "$ns" 2>&1)" \
+      || die "could not create namespace '$ns': $out"
+  done
+}
+
 echo
 printf "%s  Preparing exam 5%s %s(worker node failure troubleshooting)%s\n\n" "$BO" "$N" "$D" "$N"
 printf "  %sThis breaks a worker node on purpose. Backups are taken, and%s\n" "$Y" "$N"
@@ -88,11 +134,7 @@ onnode "
 ok "kubelet config and kubeconfig backed up to $NODE:$BK"
 
 # ── 3. Clean up any previous run of this exam ────────────────
-kubectl delete ns node-lab --ignore-not-found --wait=false >/dev/null 2>&1
-for i in $(seq 1 20); do
-  kubectl get ns node-lab >/dev/null 2>&1 || break
-  sleep 2
-done
+ns_wipe node-lab
 kubectl taint node "$NODE" maintenance- >/dev/null 2>&1
 kubectl label node "$NODE" disktype- >/dev/null 2>&1
 kubectl uncordon "$NODE" >/dev/null 2>&1
@@ -101,7 +143,7 @@ rm -rf "$ANS" "$EX5"; mkdir -p "$ANS" "$EX5"
 ok "previous exam 5 state cleared"
 
 # ── 4. Workloads that the scheduling tasks act on ───────────
-kubectl create ns node-lab >/dev/null 2>&1
+ns_make node-lab
 
 # Task 5: nodeSelector disktype=ssd, and the node does not have that label.
 kubectl apply -f - >/dev/null 2>&1 <<EOF

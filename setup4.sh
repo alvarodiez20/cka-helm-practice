@@ -28,6 +28,52 @@ ok(){ printf "  ${G}✔${N} %s\n" "$*"; }
 warn(){ printf "  ${Y}!${N} %s\n" "$*"; }
 die(){ printf "  ${R}✘${N} %s\n" "$*"; exit 1; }
 
+# ── Namespace lifecycle ─────────────────────────────────────
+# Namespaces terminate asynchronously, and creating one while it is still
+# Terminating fails. With kubectl output suppressed that failure is invisible:
+# the seed carries on, every workload destined for that namespace silently
+# fails to be created, and the script still reports success. So: wait for the
+# deletes to finish, force the finalizers off if something is wedged, and fail
+# loudly if a namespace still cannot be created.
+ns_wipe(){ # ns...
+  local ns still i
+  for ns in "$@"; do
+    kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1
+  done
+  still=""
+  for i in $(seq 1 120); do            # up to 4 minutes
+    still=""
+    for ns in "$@"; do
+      kubectl get ns "$ns" >/dev/null 2>&1 && still="$still $ns"
+    done
+    [ -z "$still" ] && return 0
+    sleep 2
+  done
+  warn "namespaces still Terminating after 4 min:$still"
+  warn "forcing their finalizers off"
+  for ns in $still; do
+    kubectl get ns "$ns" -o json 2>/dev/null \
+      | tr -d '\n' | sed 's/"finalizers": *\[[^]]*\]/"finalizers": []/' \
+      | kubectl replace --raw "/api/v1/namespaces/${ns}/finalize" -f - >/dev/null 2>&1
+  done
+  sleep 5
+}
+
+ns_make(){ # ns...
+  # NOTE: "kubectl get ns" SUCCEEDS for a namespace that is Terminating, so
+  # existence is not the test — the phase is. A Terminating namespace cannot
+  # hold objects, so treat it as fatal rather than carrying on into a seed
+  # that will quietly create nothing.
+  local ns out phase
+  for ns in "$@"; do
+    phase="$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)"
+    [ "$phase" = "Active" ] && continue
+    [ -n "$phase" ] && die "namespace '$ns' is stuck in $phase — delete it by hand, then re-run"
+    out="$(kubectl create ns "$ns" 2>&1)" \
+      || die "could not create namespace '$ns': $out"
+  done
+}
+
 echo
 printf "%s  Preparing exam 4%s %s(NetworkPolicy + network troubleshooting)%s\n\n" "$BO" "$N" "$D" "$N"
 
@@ -39,42 +85,14 @@ ok "cluster reachable ($(kubectl version -o json 2>/dev/null | tr ',' '\n' | gre
 mkdir -p "$ANS" "$EX4"
 
 # ── 2. Clean slate ──────────────────────────────────────────
-for ns in $NS_LIST np-probe; do
-  kubectl delete ns "$ns" --ignore-not-found --wait=false >/dev/null 2>&1
-done
-# Namespaces terminate asynchronously; creating one while it is Terminating
-# fails, so wait for them to actually go. 4 minutes, because a namespace full
-# of pods with a 30s grace period is routinely slower than a minute.
-for i in $(seq 1 120); do
-  still=""
-  for ns in $NS_LIST np-probe; do
-    kubectl get ns "$ns" >/dev/null 2>&1 && still="$still $ns"
-  done
-  [ -z "$still" ] && break
-  sleep 2
-done
-if [ -n "$still" ]; then
-  warn "still Terminating after 4 min:$still"
-  warn "forcing finalizers off"
-  for ns in $still; do
-    kubectl get ns "$ns" -o json 2>/dev/null \
-      | tr -d '\n' | sed 's/"finalizers": *\[[^]]*\]/"finalizers": []/' \
-      | kubectl replace --raw "/api/v1/namespaces/$ns/finalize" -f - >/dev/null 2>&1
-  done
-  sleep 5
-fi
+ns_wipe $NS_LIST np-probe
 rm -rf "$ANS" "$EX4"; mkdir -p "$ANS" "$EX4"
 ok "previous state removed"
 
 # ── 3. Namespaces, with the labels the tasks select on ──────
 # NetworkPolicy has no way to name a namespace: namespaceSelector matches
 # LABELS. That is why every namespace here carries one.
-for ns in $NS_LIST; do
-  if ! kubectl get ns "$ns" >/dev/null 2>&1; then
-    out="$(kubectl create ns "$ns" 2>&1)" \
-      || die "could not create namespace '$ns': $out"
-  fi
-done
+ns_make $NS_LIST
 kubectl label ns frontend   tier=frontend --overwrite >/dev/null 2>&1
 kubectl label ns backend    tier=backend --overwrite >/dev/null 2>&1
 kubectl label ns monitoring purpose=monitoring --overwrite >/dev/null 2>&1
@@ -264,11 +282,20 @@ say "waiting for pods to be Ready..."
 for spec in "web frontend" "client frontend" "api backend" "db backend" \
             "prom monitoring" "tester netdebug"; do
   set -- $spec
-  kubectl -n "$2" wait --for=condition=Ready "pod/$1" --timeout=90s >/dev/null 2>&1 \
-    || warn "pod $1 in $2 is not Ready yet — it may still be pulling"
+  # Distinguish "not there at all" from "there but still pulling" — reporting
+  # a missing pod as slow to pull sends you looking in entirely the wrong place.
+  if ! kubectl -n "$2" get pod "$1" >/dev/null 2>&1; then
+    warn "pod $1 in $2 DOES NOT EXIST — the seed failed; re-run this script"
+    MISSING_PODS=1
+  elif ! kubectl -n "$2" wait --for=condition=Ready "pod/$1" --timeout=90s >/dev/null 2>&1; then
+    warn "pod $1 in $2 is not Ready yet — it may still be pulling"
+  fi
 done
 kubectl -n shop rollout status deploy/store --timeout=90s >/dev/null 2>&1 \
   || warn "deployment store is not ready yet"
+if [ "${MISSING_PODS:-0}" = 1 ]; then
+  die "the seed is incomplete — some pods were never created. Re-run ./setup4.sh"
+fi
 ok "workloads up"
 
 # ── 8. Does this CNI actually ENFORCE NetworkPolicy? ────────
