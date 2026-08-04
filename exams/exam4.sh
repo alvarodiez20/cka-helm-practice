@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam4.sh
+#  cka-practice · exam4.sh
 #  13 CKA-style NetworkPolicy and network-troubleshooting
 #  tasks. 100 points. Pass mark: 66.
 #
-#    ./exam4.sh            list the tasks
-#    ./exam4.sh q 4        show task 4
-#    ./exam4.sh grade      grade everything, print the score
-#    ./exam4.sh grade 4    grade task 4 only
-#    ./exam4.sh solve 4    the commands that solve task 4
-#    ./exam4.sh explain 4  step-by-step walkthrough of task 4
-#    ./exam4.sh netcheck   run real connectivity probes
-#    ./exam4.sh help       full usage
-#    ./exam4.sh reset      re-seed the cluster (runs setup4.sh)
+#    ./exams/exam4.sh            list the tasks
+#    ./exams/exam4.sh q 4        show task 4
+#    ./exams/exam4.sh grade      grade everything, print the score
+#    ./exams/exam4.sh grade 4    grade task 4 only
+#    ./exams/exam4.sh solve 4    the commands that solve task 4
+#    ./exams/exam4.sh explain 4  step-by-step walkthrough of task 4
+#    ./exams/exam4.sh netcheck   run real connectivity probes
+#    ./exams/exam4.sh help       full usage
+#    ./exams/exam4.sh reset      re-seed the cluster (runs setup4.sh)
 # ============================================================
 set -uo pipefail
 
@@ -20,7 +20,8 @@ BASE="${HOME}"
 ANS="$BASE/answers4"
 EX4="$BASE/exam4"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -31,8 +32,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam4.sh"; CQ="./exam4.sh q"; CG="./exam4.sh grade"
-  CE="./exam4.sh explain"; CS="./exam4.sh solve"; CH="./exam4.sh help"
+  CL="./exams/exam4.sh"; CQ="./exams/exam4.sh q"; CG="./exams/exam4.sh grade"
+  CE="./exams/exam4.sh explain"; CS="./exams/exam4.sh solve"; CH="./exams/exam4.sh help"
 fi
 
 TOTAL=13
@@ -1184,7 +1185,7 @@ grade_all(){
 }
 
 usage(){
-  printf "\n%s  cka-helm-practice · exam 4%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 4%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sNetworkPolicy and network troubleshooting. No Helm.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-20s %s\n" "$CL"           "list every task with its points and status"
@@ -1255,7 +1256,7 @@ case "${1:-list}" in
   netcheck|check|info) netcheck ;;
   reset) bash "$HERE/setup4.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 4)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 4)\n" "$VERSION" ;;
   *)
     printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"
     usage; exit 1 ;;

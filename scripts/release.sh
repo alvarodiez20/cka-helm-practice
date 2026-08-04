@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · scripts/release.sh
+#  cka-practice · scripts/release.sh
 #
 #  Cuts a release, or checks that the last one is coherent.
 #
@@ -35,7 +35,7 @@ bad(){  printf "  ${R}✘${N} %s\n" "$*"; }
 die(){  bad "$*"; exit 1; }
 
 TODAY="$(date +%Y-%m-%d)"
-REPO_URL="https://github.com/alvarodiez20/cka-helm-practice"
+REPO_URL="https://github.com/alvarodiez20/cka-practice"
 
 # ── where each version lives ────────────────────────────────
 ver_file(){ tr -d '[:space:]' < VERSION 2>/dev/null; }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · demo/record-demo.sh
+#  cka-practice · demo/record-demo.sh
 #
 #  Records a scripted terminal walkthrough of the exam suite and
 #  turns it into a GIF and an animated SVG for the README and for
@@ -11,10 +11,14 @@
 #  so the recording is reproducible instead of depending on how
 #  fast you type.
 #
-#    ./demo/record-demo.sh                 # exam 1, cast + gif + svg
-#    EXAM=3 ./demo/record-demo.sh          # record exam 3 instead
+#    ./demo/record-demo.sh                 # the tour, cast + gif + svg
+#    DEMO=kustomize ./demo/record-demo.sh  # one exam in depth
+#    DEMO=helm-oci  ./demo/record-demo.sh
 #    ./demo/record-demo.sh --cast-only     # just the .cast, convert later
 #    ./demo/record-demo.sh --render-only   # convert an existing .cast
+#
+#  DEMO picks the script; the exam it uses must be SEEDED first,
+#  which 'cka use <name>' does for you.
 #
 #  Requirements
 #    asciinema   the recorder            https://asciinema.org
@@ -24,14 +28,20 @@
 #  --cast-only needs only asciinema, and .cast files can be
 #  converted anywhere, so recording on the cluster host and
 #  rendering on your laptop is the usual split.
+#
+#  KEEP THIS FILE IN STEP WITH THE INTERFACE. The recording that
+#  shipped with 1.x still typed 'exam3', 'q3 2' and 'grade3 2',
+#  six months after 'cka use', 'q' and 'grade' replaced them —
+#  so the README's demo taught commands the README did not
+#  document. If you change the verbs, re-record.
 # ============================================================
 set -uo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 OUT="$HERE/out"
-EXAM="${EXAM:-1}"
-NAME="${NAME:-cka-helm-practice-exam${EXAM}}"
+DEMO="${DEMO:-tour}"
+NAME="${NAME:-cka-practice-${DEMO}}"
 CAST="$OUT/${NAME}.cast"
 
 # Typing speed and pauses. Slower is more readable; these are tuned so a
@@ -55,7 +65,7 @@ case "${1:-}" in
   --cast-only)   MODE="cast" ;;
   --render-only) MODE="render" ;;
   ""|--all)      MODE="all" ;;
-  -h|--help)     sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help)     sed -n '2,37p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *)             die "unknown option: $1  (try --help)" ;;
 esac
 
@@ -66,15 +76,44 @@ mkdir -p "$OUT"
 # (typed out, but not executed), which is how the narration works.
 # Lines starting with @ are pauses in seconds.
 demo_script(){
-  case "$EXAM" in
-    3)
+  case "$DEMO" in
+    # ── one exam, in depth: the Kustomize traps ─────────────
+    kustomize)
       cat <<'SCRIPT'
-# 13 Helm tasks for the CKA, graded against a real cluster.
+# Kustomize on the CKA, graded against a live cluster.
 @1
-exam3
+cka use kustomize
+@3
+# Task 4: change the image without touching the manifest.
+q 4
+@4
+# The transformer matches the IMAGE name, not the container name.
+grep -A2 'image:' ~/exam11/base/deployment.yaml
+@3
+kubectl kustomize ~/exam11/base | grep 'image:'
+@3
+kubectl apply -k ~/exam11/base
+@2
+# The grader reads the cluster AND checks the base was left alone.
+grade 4
+@3
+# Task 3 is the one that bites on a real cluster.
+explain 3
+@7
+grade
+@4
+SCRIPT
+      ;;
+
+    # ── one exam, in depth: the --skip-crds trap ────────────
+    helm-oci)
+      cat <<'SCRIPT'
+# Helm on the CKA, graded against a live cluster.
+@1
+cka use helm-oci
 @3
 # Task 2 is the one everybody gets wrong.
-q3 2
+q 2
 @3
 # --skip-crds looks right. It does nothing to this chart.
 helm template argocd argo/argo-cd --version 7.9.1 -n argocd --skip-crds | grep -c 'kind: CustomResourceDefinition'
@@ -84,60 +123,42 @@ helm template argocd argo/argo-cd --version 7.9.1 -n argocd --set crds.install=f
 grep -c 'kind: CustomResourceDefinition' ~/answers3/q2.yaml
 @2
 # The grader reads the file and the cluster, not my answer.
-grade3 2
-@3
-# Stuck? Every task has a walkthrough that explains the trap.
-explain3 2
-@6
-grade3
-@4
-SCRIPT
-      ;;
-    2)
-      cat <<'SCRIPT'
-# Exam 2: repos, values precedence, --atomic, subcharts, broken charts.
-@1
-exam2
-@3
-q2 4
-@3
-# Two values files. The last -f wins, key by key.
-cat ~/exam2/base.yaml ~/exam2/override.yaml
-@2
-helm install shop-app extrarepo/web-stack --version 1.0.0 -n shop --create-namespace -f ~/exam2/base.yaml -f ~/exam2/override.yaml
-@2
-helm get values shop-app -n shop
-@2
-grade2 4
-@3
-grade2
-@4
-SCRIPT
-      ;;
-    *)
-      cat <<'SCRIPT'
-# 13 Helm tasks for the CKA. You solve them on a real cluster.
-@1
-exam
-@3
-q 2
-@3
-# The grader checks the cluster, so let me look at it first.
-kubectl get pods -n apps
-@2
-helm history legacy -n apps
-@3
-# Revision 3 is the broken upgrade. Roll back to the last good one.
-helm rollback legacy 2 -n apps
-@1
-helm history legacy -n apps
-@3
-# Note the rollback APPENDED revision 4. It did not erase revision 3.
 grade 2
 @3
-# No guessing: it inspects release status, revisions and stored values.
+# Stuck? Every task has a walkthrough that explains the trap.
+explain 2
+@6
 grade
 @4
+SCRIPT
+      ;;
+
+    # ── the default: the whole interface in forty seconds ───
+    # Five commands, which is the pitch. Nothing here is exam-specific,
+    # so this one survives the exam set changing under it.
+    *)
+      cat <<'SCRIPT'
+# Eleven mock CKA exams, graded against a real cluster.
+@1
+cka
+@5
+# Pick one. It is built in the cluster if it is not there yet.
+cka use netpol
+@6
+# What should I do first?
+next
+@5
+# ... solve it against the cluster, then:
+kubectl -n frontend get networkpolicy
+@3
+grade 1
+@3
+# Wrong? The walkthrough gives the reasoning, not just the answer.
+explain 4
+@7
+# And the score is the cluster's state, not a stored answer.
+grade
+@5
 SCRIPT
       ;;
   esac
@@ -159,7 +180,7 @@ PAUSE_SHORT=$PAUSE_SHORT
 PAUSE_LONG=$PAUSE_LONG
 PROMPT='\$ '
 
-# Load the exam commands, so the recording shows 'exam3' rather than paths.
+# Load the exam commands, so the recording shows 'cka use' rather than paths.
 source "$ROOT/activate.sh" 2>/dev/null || true
 
 type_out(){ # print a string one character at a time
@@ -209,8 +230,8 @@ if [ "$MODE" != "render" ]; then
   build_player
 
   rm -f "$CAST"
-  printf "\n%s  Recording exam %s%s  %s(%sx%s, ~40s — do not touch the keyboard)%s\n\n" \
-    "$BO" "$EXAM" "$N" "$D" "$COLS" "$ROWS" "$N"
+  printf "\n%s  Recording '%s'%s  %s(%sx%s, ~40s — do not touch the keyboard)%s\n\n" \
+    "$BO" "$DEMO" "$N" "$D" "$COLS" "$ROWS" "$N"
 
   # --cols/--rows pin the geometry so the output does not depend on the
   # window this happens to run in. -q keeps asciinema's own banner out

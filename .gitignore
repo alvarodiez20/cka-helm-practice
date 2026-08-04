@@ -1,16 +1,22 @@
-answers/
-answers2/
-answers3/
+# Answer directories and working trees the seeds build in $HOME. They should
+# never appear here, but they do when someone runs a seed from inside a clone.
+answers*/
+exam[0-9]*/
 dist/
 *.tgz
 cka-helm/
 cka-helm2/
-exam3/
 
-# Recording scratch files. The finished .cast/.gif/.svg in demo/out are
-# committed on purpose — the README links to them.
-demo/out/.player.sh
-demo/out/.script.txt
+# Recordings. These are BUILD OUTPUT — 'demo/record-demo.sh' regenerates them
+# from the script it carries, and a committed GIF goes stale silently: the one
+# that shipped through 1.x still showed 'exam3' and 'q3 2' long after those
+# stopped being the documented commands, which is a worse README than no demo
+# at all. If you want one in the README, record it and attach it to the
+# release rather than committing the binary.
+demo/out/
 
 # Local editor/agent settings, not project config.
 .claude/
+
+# FUSE leftovers from editing files that were open elsewhere.
+.fuse_hidden*

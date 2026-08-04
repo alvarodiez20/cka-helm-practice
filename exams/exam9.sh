@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam9.sh
+#  cka-practice · exam9.sh
 #  13 CKA-style workloads-and-scheduling tasks. 100 points.
 #  Pass mark: 66.
 #
-#    ./exam9.sh q 4 · grade · explain 4 · workinfo
+#    ./exams/exam9.sh q 4 · grade · explain 4 · workinfo
 # ============================================================
 set -uo pipefail
 
 BASE="${HOME}"; ANS="$BASE/answers9"; EX9="$BASE/exam9"
 NS="work-lab"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -21,8 +22,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam9.sh"; CQ="./exam9.sh q"; CG="./exam9.sh grade"
-  CE="./exam9.sh explain"; CS="./exam9.sh solve"; CH="./exam9.sh help"
+  CL="./exams/exam9.sh"; CQ="./exams/exam9.sh q"; CG="./exams/exam9.sh grade"
+  CE="./exams/exam9.sh explain"; CS="./exams/exam9.sh solve"; CH="./exams/exam9.sh help"
 fi
 
 TOTAL=13
@@ -868,7 +869,7 @@ grade_all(){
   if [ "$pct" -ge 66 ]; then printf "%sPASS%s\n\n" "$G$BO" "$N"; else printf "%sFAIL%s %s(the CKA pass mark is 66)%s\n\n" "$R$BO" "$N" "$D" "$N"; fi
 }
 usage(){
-  printf "\n%s  cka-helm-practice · exam 9%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 9%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sWorkloads and scheduling — 15%% of the CKA.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-16s %s\n" "$CL" "list every task with its points and status"
@@ -916,6 +917,6 @@ case "${1:-list}" in
   workinfo|info) workinfo ;;
   reset) bash "$HERE/setup9.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 9)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 9)\n" "$VERSION" ;;
   *) printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"; usage; exit 1 ;;
 esac

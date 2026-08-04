@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · scripts/audit-graders.sh
+#  cka-practice · scripts/audit-graders.sh
 #
 #  Looks for graders that FAIL OPEN — that award points when
 #  they should not.
@@ -39,7 +39,7 @@ if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';D=$'\e[2m';BO=$'\e[1m';N=$
 else G="";R="";Y="";D="";BO="";N=""; fi
 
 FAIL=0
-EXAMS="exam.sh $(ls exam[0-9]*.sh 2>/dev/null | sort -V | tr '\n' ' ')"
+EXAMS="$(ls exams/exam[0-9]*.sh 2>/dev/null | sort -V | tr "\n" " ")"
 
 # ── 1. behavioural ──────────────────────────────────────────
 printf "\n%s  Graders against no cluster%s  %s(every one must score 0/100)%s\n\n" "$BO" "$N" "$D" "$N"
@@ -58,9 +58,9 @@ for f in $EXAMS; do
              bash "$f" grade 2>/dev/null \
            | grep -oE 'SCORE: [0-9]+/[0-9]+' | head -1 | sed 's/SCORE: //')"
   case "$score" in
-    0/*)  printf "    %s✔%s %-11s %s\n" "$G" "$N" "$f" "$score" ;;
-    "")   printf "    %s✘%s %-11s %sno score printed at all%s\n" "$R" "$N" "$f" "$R" "$N"; FAIL=1 ;;
-    *)    printf "    %s✘%s %-11s %s%s — points awarded with no cluster%s\n" "$R" "$N" "$f" "$R" "$score" "$N"; FAIL=1 ;;
+    0/*)  printf "    %s✔%s %-17s %s\n" "$G" "$N" "$f" "$score" ;;
+    "")   printf "    %s✘%s %-17s %sno score printed at all%s\n" "$R" "$N" "$f" "$R" "$N"; FAIL=1 ;;
+    *)    printf "    %s✘%s %-17s %s%s — points awarded with no cluster%s\n" "$R" "$N" "$f" "$R" "$score" "$N"; FAIL=1 ;;
   esac
 done
 
@@ -86,7 +86,13 @@ GRN = "\033[32m" if TTY else ""
 OFF = "\033[0m"  if TTY else ""
 
 problems = 0
-for path in sorted(glob.glob("exam*.sh"), key=lambda p: (len(p), p)):
+# Sort exam1, exam2 ... exam10, exam11 numerically rather than lexically, or
+# exam10 sorts before exam2 and the report reads as though exams are missing.
+def _natural(p):
+    m = re.search(r"exam(\d+)\.sh$", p)
+    return (int(m.group(1)) if m else 0, p)
+
+for path in sorted(glob.glob("exams/exam*.sh"), key=_natural):
     src = open(path, encoding="utf-8").read()
     m = re.search(r'^check\(\)\{(.*?)^\}', src, re.S | re.M)
     if not m:
@@ -104,7 +110,7 @@ for path in sorted(glob.glob("exam*.sh"), key=lambda p: (len(p), p)):
         if POSITIVE.search(code):
             continue
         problems += 1
-        print("    %s✘%s %-11s task %-3s decides on a negation and never proves"
+        print("    %s✘%s %-17s task %-3s decides on a negation and never proves"
               % (RED, OFF, path, n))
         print("      the cluster is there. It would score with kubectl uninstalled.")
         for l in code.strip().splitlines()[:4]:

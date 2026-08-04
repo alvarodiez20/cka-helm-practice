@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam7.sh
+#  cka-practice · exam7.sh
 #  13 CKA-style storage tasks. 100 points. Pass mark: 66.
 #
 #  Storage is 10% of the CKA. Everything here uses static PVs,
 #  so it works without a dynamic provisioner.
 #
-#    ./exam7.sh q 4 · grade · explain 4 · storeinfo
+#    ./exams/exam7.sh q 4 · grade · explain 4 · storeinfo
 # ============================================================
 set -uo pipefail
 
@@ -15,7 +15,8 @@ ANS="$BASE/answers7"
 EX7="$BASE/exam7"
 NS="store-lab"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -25,8 +26,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam7.sh"; CQ="./exam7.sh q"; CG="./exam7.sh grade"
-  CE="./exam7.sh explain"; CS="./exam7.sh solve"; CH="./exam7.sh help"
+  CL="./exams/exam7.sh"; CQ="./exams/exam7.sh q"; CG="./exams/exam7.sh grade"
+  CE="./exams/exam7.sh explain"; CS="./exams/exam7.sh solve"; CH="./exams/exam7.sh help"
 fi
 
 TOTAL=13
@@ -885,7 +886,7 @@ grade_all(){
   if [ "$pct" -ge 66 ]; then printf "%sPASS%s\n\n" "$G$BO" "$N"; else printf "%sFAIL%s %s(the CKA pass mark is 66)%s\n\n" "$R$BO" "$N" "$D" "$N"; fi
 }
 usage(){
-  printf "\n%s  cka-helm-practice · exam 7%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 7%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sStorage — 10%% of the CKA.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-18s %s\n" "$CL" "list every task with its points and status"
@@ -941,6 +942,6 @@ case "${1:-list}" in
   storeinfo|info) storeinfo ;;
   reset) bash "$HERE/setup7.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 7)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 7)\n" "$VERSION" ;;
   *) printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"; usage; exit 1 ;;
 esac

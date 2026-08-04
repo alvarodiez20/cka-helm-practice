@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam2.sh
+#  cka-practice · exam2.sh
 #  Second set of 13 CKA-style Helm tasks. 100 points. Pass: 66.
 #  Covers ground exam 1 does not: repo management, values files
 #  and precedence, --atomic, subcharts, chart debugging.
 #
-#    ./exam2.sh            list the tasks
-#    ./exam2.sh q 4        show task 4
-#    ./exam2.sh grade      grade everything, print the score
-#    ./exam2.sh explain 4  step-by-step walkthrough of task 4
-#    ./exam2.sh help       full usage
-#    ./exam2.sh version    print the exam suite version
-#    ./exam2.sh reset      re-seed the cluster (runs setup2.sh)
+#    ./exams/exam2.sh            list the tasks
+#    ./exams/exam2.sh q 4        show task 4
+#    ./exams/exam2.sh grade      grade everything, print the score
+#    ./exams/exam2.sh explain 4  step-by-step walkthrough of task 4
+#    ./exams/exam2.sh help       full usage
+#    ./exams/exam2.sh version    print the exam suite version
+#    ./exams/exam2.sh reset      re-seed the cluster (runs setup2.sh)
 # ============================================================
 set -uo pipefail
 
@@ -21,7 +21,8 @@ EX2="$BASE/exam2"
 REPO_NAME="extrarepo"
 REPO_URL="http://127.0.0.1:${CKA_HELM2_PORT:-8880}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -32,8 +33,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam2.sh"; CQ="./exam2.sh q"; CG="./exam2.sh grade"
-  CE="./exam2.sh explain"; CS="./exam2.sh solve"; CH="./exam2.sh help"
+  CL="./exams/exam2.sh"; CQ="./exams/exam2.sh q"; CG="./exams/exam2.sh grade"
+  CE="./exams/exam2.sh explain"; CS="./exams/exam2.sh solve"; CH="./exams/exam2.sh help"
 fi
 
 TOTAL=13
@@ -700,7 +701,7 @@ grade_all(){
 }
 
 usage(){
-  printf "\n%s  cka-helm-practice · exam 2%s — %s Helm tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 2%s — %s Helm tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sRepo management, values files and precedence, --atomic, subcharts,%s\n" "$D" "$N"
   printf "  %schart debugging. Exam 1 covers different ground; both can run at once.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
@@ -766,7 +767,7 @@ case "${1:-list}" in
   # all of them; these three have no dashboard, so it lists the tasks.
   info) exec "$0" list ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 2)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 2)\n" "$VERSION" ;;
   *)
     printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"
     usage; exit 1 ;;

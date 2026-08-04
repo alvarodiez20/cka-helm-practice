@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · scripts/check-tasks.sh
+#  cka-practice · scripts/check-tasks.sh
 #
 #  Renders every task of every exam and insists it comes out
 #  whole.
@@ -18,7 +18,7 @@
 #
 #  printed in the middle of a candidate's walkthrough.
 #
-#  So: for all thirteen tasks of all ten exams, run q, solve
+#  So: for all thirteen tasks of every exam, run q, solve
 #  and explain, and require exit 0, no stderr, and output that
 #  is actually there.
 #
@@ -32,7 +32,7 @@ cd "$ROOT" || exit 1
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";D="";BO="";N=""; fi
 
-EXAMS="exam.sh $(ls exam[0-9]*.sh 2>/dev/null | sort -V | tr '\n' ' ')"
+EXAMS="$(ls exams/exam[0-9]*.sh 2>/dev/null | sort -V | tr "\n" " ")"
 HOMEDIR="$(mktemp -d)"
 ERR="$(mktemp)"
 trap 'rm -rf "$HOMEDIR" "$ERR"' EXIT
@@ -65,9 +65,9 @@ for f in $EXAMS; do
     done
   done
   if [ -z "$bad" ]; then
-    printf "    %s✔%s %-11s %s tasks × 3\n" "$G" "$N" "$f" "$total"
+    printf "    %s✔%s %-17s %s tasks × 3\n" "$G" "$N" "$f" "$total"
   else
-    printf "    %s✘%s %-11s%s\n" "$R" "$N" "$f" "$bad"
+    printf "    %s✘%s %-17s%s\n" "$R" "$N" "$f" "$bad"
     FAIL=1
   fi
 done
@@ -94,7 +94,13 @@ OFF = "\033[0m"  if TTY else ""
 NEXT_OK = re.compile(r'^\s*$|^(Q|PTS|SOL|WALK)\[|^#|^[A-Za-z_]+\(\)|^\w+=')
 problems = 0
 
-for path in sorted(glob.glob("exam*.sh"), key=lambda p: (len(p), p)):
+# Sort exam1, exam2 ... exam10, exam11 numerically rather than lexically, or
+# exam10 sorts before exam2 and the report reads as though exams are missing.
+def _natural(p):
+    m = re.search(r"exam(\d+)\.sh$", p)
+    return (int(m.group(1)) if m else 0, p)
+
+for path in sorted(glob.glob("exams/exam*.sh"), key=_natural):
     src = open(path, encoding="utf-8").read()
     lines = src.splitlines()
     for m in re.finditer(r'^(Q|SOL|WALK)\[(\d+)\]="', src, re.M):
@@ -114,7 +120,7 @@ for path in sorted(glob.glob("exam*.sh"), key=lambda p: (len(p), p)):
             continue
         line_no = src[:j].count("\n") + 1
         problems += 1
-        print("    %s✘%s %-11s %s[%s] closes early at line %d"
+        print("    %s✘%s %-17s %s[%s] closes early at line %d"
               % (RED, OFF, path, m.group(1), m.group(2), line_no))
         print("      %s" % lines[line_no-1].strip()[:88])
         print("      an unescaped \" here ends the string; escape it as \\\" or reword")

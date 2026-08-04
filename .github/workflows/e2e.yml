@@ -1,0 +1,64 @@
+name: e2e
+
+# The check the other workflow cannot make.
+#
+# ci.yml is entirely static: syntax, lint, "does the grader score 0 with no
+# kubectl", "does every task render". All of that proves the NEGATIVE case.
+# None of it proves the positive one — that a correct answer scores — so a
+# grader could have been unsatisfiable and every job would still be green.
+#
+# This one brings up a real cluster with kind, seeds each exam, applies each
+# task's own solution, and requires 100/100.
+#
+# Weekly rather than per-push, because it takes minutes rather than seconds
+# and the thing it guards against — a grader drifting away from its task —
+# does not appear between two commits on a Tuesday. It also catches the other
+# direction: a new Kubernetes or kustomize release changing behaviour under an
+# exam that nobody touched.
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'     # Mondays, 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      exams:
+        description: 'Exam numbers, space separated (default: the single-node ones)'
+        required: false
+        default: '1 2 4 7 9 11'
+
+permissions:
+  contents: read
+
+jobs:
+  solve:
+    name: every exam scores 100/100 from its own solutions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bring up a cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: cka-practice-e2e
+
+      - name: what we are running against
+        run: |
+          kubectl version
+          kubectl get nodes -o wide
+
+      - name: seed, solve and grade
+        # Exams 3, 5, 6, 8 and 10 are excluded and each for a stated reason:
+        #   3   installs from the real chart repositories over the internet
+        #   5   breaks a worker's kubelet over ssh; needs two nodes
+        #   6   takes kube-scheduler down
+        #   8   must run on a control plane with etcdctl and kubeadm
+        #   10  disables a worker's CNI over ssh; needs two nodes
+        # './scripts/solve-and-grade.sh --list' prints this reasoning too.
+        run: ./scripts/solve-and-grade.sh ${{ github.event.inputs.exams || '1 2 4 7 9 11' }}
+
+      - name: what was left in the cluster
+        if: always()
+        run: |
+          kubectl get ns
+          kubectl get all,cm,secret -A --no-headers 2>/dev/null \
+            | grep -vE 'kube-system|kube-public|local-path|kube-root-ca' | head -60

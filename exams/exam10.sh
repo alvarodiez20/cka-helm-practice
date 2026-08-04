@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam10.sh
+#  cka-practice · exam10.sh
 #  13 CKA-style tasks on Ingress, the Gateway API, and the CNI.
 #  100 points. Pass mark: 66.
 #
-#    ./exam10.sh q 4 · grade · explain 4 · edgeinfo
+#    ./exams/exam10.sh q 4 · grade · explain 4 · edgeinfo
 #
 #  NO controller is installed anywhere in this exam, and that
 #  is deliberate. The CKA asks you to WRITE these objects; it
@@ -20,7 +20,8 @@ NS="edge-lab"
 NODE="${CKA_NODE:-node01}"
 CNIDIR="/etc/cni/net.d"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -28,8 +29,8 @@ else G="";R="";Y="";B="";D="";BO="";N=""; fi
 if [ -n "${EXAM_HOME:-}" ]; then
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam10.sh"; CQ="./exam10.sh q"; CG="./exam10.sh grade"
-  CE="./exam10.sh explain"; CS="./exam10.sh solve"; CH="./exam10.sh help"
+  CL="./exams/exam10.sh"; CQ="./exams/exam10.sh q"; CG="./exams/exam10.sh grade"
+  CE="./exams/exam10.sh explain"; CS="./exams/exam10.sh solve"; CH="./exams/exam10.sh help"
 fi
 
 TOTAL=13
@@ -1201,7 +1202,7 @@ grade_all(){
   if [ "$pct" -ge 66 ]; then printf "%sPASS%s\n\n" "$G$BO" "$N"; else printf "%sFAIL%s %s(the CKA pass mark is 66)%s\n\n" "$R$BO" "$N" "$D" "$N"; fi
 }
 usage(){
-  printf "\n%s  cka-helm-practice · exam 10%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 10%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sIngress, the Gateway API, and the CNI — Services & Networking is 20%%.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-18s %s\n" "$CL" "list every task with its points and status"
@@ -1261,6 +1262,6 @@ case "${1:-list}" in
   restore) restore ;;
   reset) bash "$HERE/setup10.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 10)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 10)\n" "$VERSION" ;;
   *) printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"; usage; exit 1 ;;
 esac

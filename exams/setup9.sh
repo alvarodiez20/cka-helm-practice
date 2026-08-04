@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · setup9.sh
+#  cka-practice · setup9.sh
 #  Seeds the NINTH exam: workloads and scheduling.
 #
 #  Workloads & Scheduling is 15% of the CKA and was the last
@@ -144,9 +144,10 @@ EOF
 ok "notes written to $EX9/README.txt"
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-SRC_LINE="source ${HERE}/activate.sh"
-if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
-  printf '\n# cka-helm-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
+ROOT="$(cd -- "$HERE/.." && pwd)"
+SRC_LINE="source ${ROOT}/activate.sh"
+if [ -f "${ROOT}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
+  printf '\n# cka-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
   ok "exam commands added to ~/.bashrc"
 fi
 

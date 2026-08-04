@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Downloads the exams and prepares the environment in one go.
-#   curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash
+#   curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-practice/main/bootstrap.sh | bash
 #
-# All ten exams are installed either way. EXAM only decides which one is
-# SEEDED — built in the cluster — before you are handed the prompt. Since
-# 'cka use <name>' seeds an exam on selection, this is a convenience, not a
+# Every exam is installed either way. EXAM only decides which one is SEEDED —
+# built in the cluster — before you are handed the prompt. Since 'cka use
+# <name>' seeds an exam on selection, this is a convenience, not a
 # requirement: it exists so you can skip building an exam you did not want.
 #
 #   curl -sL .../bootstrap.sh | bash              seeds exam 1 (default)
@@ -18,28 +18,33 @@ set -uo pipefail
 GH_USER="${GH_USER:-alvarodiez20}"
 BRANCH="${GH_BRANCH:-main}"
 EXAM="${EXAM:-1}"
-RAW="https://raw.githubusercontent.com/${GH_USER}/cka-helm-practice/${BRANCH}"
-DEST="${HOME}/cka-helm-practice"
+COUNT="${CKA_EXAM_COUNT:-11}"
+RAW="https://raw.githubusercontent.com/${GH_USER}/cka-practice/${BRANCH}"
+DEST="${HOME}/cka-practice"
 
 echo
-echo "  Downloading cka-helm-practice from ${GH_USER}..."
-mkdir -p "$DEST" && cd "$DEST" || exit 1
+echo "  Downloading cka-practice from ${GH_USER}..."
+mkdir -p "$DEST/exams" && cd "$DEST" || exit 1
+
+# The file list is DERIVED, not hand-maintained. It used to be four lines of
+# literal filenames that a new exam had to be added to by hand, and CI needed
+# a dedicated job to catch the times it was not — an exam in the repo but not
+# in this list installs as a task list with no seed behind it.
+FILES="cka.sh activate.sh VERSION"
+for n in $(seq 1 "$COUNT"); do
+  FILES="$FILES exams/exam${n}.sh exams/setup${n}.sh"
+done
 
 # Fetch everything, but do NOT abort the whole install because one file is
 # missing. A single 404 — a partial push, a renamed file, or just CDN lag
 # right after a release — used to leave you with a half-populated directory
 # and no working exams at all. Missing files are reported; the install only
 # fails if the exam you actually asked for is not there.
-FILES="setup.sh exam.sh setup2.sh exam2.sh setup3.sh exam3.sh
-setup4.sh exam4.sh setup5.sh exam5.sh setup6.sh exam6.sh
-setup7.sh exam7.sh setup8.sh exam8.sh setup9.sh exam9.sh
-setup10.sh exam10.sh cka.sh activate.sh VERSION"
-
 MISSING=""
 for f in $FILES; do
   curl -fsSL "${RAW}/${f}" -o "$f" 2>/dev/null || MISSING="$MISSING $f"
 done
-chmod +x ./*.sh 2>/dev/null
+chmod +x ./*.sh ./exams/*.sh 2>/dev/null
 
 if [ -n "$MISSING" ]; then
   echo
@@ -54,7 +59,7 @@ case "$EXAM" in
     echo "  Installed. Nothing seeded yet — selecting an exam builds it:"
     echo
     echo "    source ${DEST}/activate.sh"
-    echo "    cka              # the dashboard: all ten, and what is seeded"
+    echo "    cka              # the dashboard: every exam, and what is seeded"
     echo "    cka use netpol   # select one; it is built if it is not there"
     echo
     exit 0 ;;
@@ -62,10 +67,12 @@ esac
 
 # The one thing worth failing over: the exam that was actually requested.
 case "$EXAM" in
-  1|"") NEED="setup.sh exam.sh" ;;
-  *)    NEED="setup${EXAM}.sh exam${EXAM}.sh" ;;
+  ''|*[!0-9]*) echo "  EXAM must be a number 1-${COUNT}, or 'none' — got '$EXAM'"; exit 1 ;;
 esac
-for f in $NEED; do
+[ "$EXAM" -ge 1 ] && [ "$EXAM" -le "$COUNT" ] \
+  || { echo "  there is no exam ${EXAM} — the range is 1-${COUNT}"; exit 1; }
+
+for f in "exams/setup${EXAM}.sh" "exams/exam${EXAM}.sh"; do
   [ -s "$f" ] || { echo "  cannot start exam ${EXAM}: ${f} is missing"; exit 1; }
 done
 
@@ -75,20 +82,6 @@ done
 # while bootstrap had just seeded this one and told them it was ready.
 # Reported from a session that installed exam 1 and was handed exam 7 task 1.
 STATE="${CKA_STATE:-${HOME}/.cka-current}"
-case "$EXAM" in
-  1|"") printf '1\n' > "$STATE" 2>/dev/null ;;
-  *)    printf '%s\n' "$EXAM" > "$STATE" 2>/dev/null ;;
-esac
+printf '%s\n' "$EXAM" > "$STATE" 2>/dev/null
 
-case "$EXAM" in
-  2) exec ./setup2.sh ;;
-  3) exec ./setup3.sh ;;
-  4) exec ./setup4.sh ;;
-  5) exec ./setup5.sh ;;
-  6) exec ./setup6.sh ;;
-  7) exec ./setup7.sh ;;
-  8) exec ./setup8.sh ;;
-  9) exec ./setup9.sh ;;
-  10) exec ./setup10.sh ;;
-  *) exec ./setup.sh ;;
-esac
+exec "./exams/setup${EXAM}.sh"

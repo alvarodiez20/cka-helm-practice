@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · setup.sh
+#  cka-practice · setup1.sh
 #  Prepares a Helm exam environment on a real cluster
 #  (Killercoda, kind, minikube...). Fully offline except for
 #  the pod images.
@@ -78,7 +78,7 @@ ok "cluster reachable"
 if ! command -v helm >/dev/null; then
   warn "helm is not installed, installing it..."
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash >/dev/null 2>&1 \
-    || die "could not install helm; install it manually and run setup.sh again"
+    || die "could not install helm; install it manually and run setup1.sh again"
 fi
 ok "helm $(helm version --short 2>/dev/null || echo '?')"
 
@@ -192,11 +192,12 @@ ok "release 'ghost' seeded in a namespace you will have to find"
 mkdir -p "$BASE/answers"
 echo
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$HERE/.." && pwd)"
 
 # Make the exam commands available in every new shell.
-SRC_LINE="source ${HERE}/activate.sh"
-if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
-  printf '\n# cka-helm-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
+SRC_LINE="source ${ROOT}/activate.sh"
+if [ -f "${ROOT}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
+  printf '\n# cka-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
   ok "exam commands added to ~/.bashrc"
 fi
 
@@ -209,4 +210,4 @@ printf "    %sq 1 · next · grade · explain 1 · info%s  %s# then work on it%s
 
 " "$BO" "$N" "$D" "$N"
 printf "  %sNew shells load them automatically. If the Killercoda session%s\n" "$D" "$N"
-printf "  %sexpires, run %s/setup.sh again.%s\n\n" "$D" "$HERE" "$N"
+printf "  %sexpires, run %s/setup1.sh again.%s\n\n" "$D" "$HERE" "$N"

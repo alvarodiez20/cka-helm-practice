@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · setup3.sh
+#  cka-practice · setup3.sh
 #  Seeds the THIRD Helm exam.
 #
 #  Unlike exams 1 and 2, this one runs against REAL public
@@ -10,7 +10,7 @@
 #
 #  It uses its own namespaces (argocd, demo, limbo) and its own
 #  answer directories (~/answers3, ~/exam3), so it coexists
-#  with setup.sh and setup2.sh.
+#  with setup1.sh and setup2.sh.
 # ============================================================
 set -uo pipefail
 
@@ -98,7 +98,7 @@ ok "helm $(helm version --short 2>/dev/null || echo '?')"
 curl -fsS --max-time 15 "${PODINFO_URL}/index.yaml" -o /dev/null 2>/dev/null \
   || die "no internet access to ${PODINFO_URL}
       exam 3 installs from real public repositories and an OCI registry.
-      If this environment is offline, use exam 1 (./setup.sh) or exam 2 (./setup2.sh),
+      If this environment is offline, use exam 1 or exam 2 (cka use helm-core),
       which serve their charts from localhost."
 ok "public chart repositories reachable"
 
@@ -200,10 +200,11 @@ EOF
 ok "notes written to $EX3/README.txt"
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$HERE/.." && pwd)"
 
-SRC_LINE="source ${HERE}/activate.sh"
-if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
-  printf '\n# cka-helm-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
+SRC_LINE="source ${ROOT}/activate.sh"
+if [ -f "${ROOT}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
+  printf '\n# cka-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
   ok "exam commands added to ~/.bashrc"
 fi
 

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam3.sh
+#  cka-practice · exam3.sh
 #  13 CKA-style Helm tasks against REAL public charts and a
 #  real OCI registry. 100 points. Pass mark: 66.
 #
-#    ./exam3.sh            list the tasks
-#    ./exam3.sh q 4        show task 4
-#    ./exam3.sh grade      grade everything, print the score
-#    ./exam3.sh grade 4    grade task 4 only
-#    ./exam3.sh solve 4    the commands that solve task 4
-#    ./exam3.sh explain 4  step-by-step walkthrough of task 4
-#    ./exam3.sh help       full usage
-#    ./exam3.sh version    print the exam suite version
-#    ./exam3.sh reset      re-seed the cluster (runs setup3.sh)
+#    ./exams/exam3.sh            list the tasks
+#    ./exams/exam3.sh q 4        show task 4
+#    ./exams/exam3.sh grade      grade everything, print the score
+#    ./exams/exam3.sh grade 4    grade task 4 only
+#    ./exams/exam3.sh solve 4    the commands that solve task 4
+#    ./exams/exam3.sh explain 4  step-by-step walkthrough of task 4
+#    ./exams/exam3.sh help       full usage
+#    ./exams/exam3.sh version    print the exam suite version
+#    ./exams/exam3.sh reset      re-seed the cluster (runs setup3.sh)
 # ============================================================
 set -uo pipefail
 
@@ -20,7 +20,8 @@ BASE="${HOME}"
 ANS="$BASE/answers3"
 EX3="$BASE/exam3"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 ARGO_URL="https://argoproj.github.io/argo-helm"
 TRAEFIK_URL="https://traefik.github.io/charts"
@@ -37,8 +38,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam3.sh"; CQ="./exam3.sh q"; CG="./exam3.sh grade"
-  CE="./exam3.sh explain"; CS="./exam3.sh solve"; CH="./exam3.sh help"
+  CL="./exams/exam3.sh"; CQ="./exams/exam3.sh q"; CG="./exams/exam3.sh grade"
+  CE="./exams/exam3.sh explain"; CS="./exams/exam3.sh solve"; CH="./exams/exam3.sh help"
 fi
 
 TOTAL=13
@@ -766,7 +767,7 @@ grade_all(){
 }
 
 usage(){
-  printf "\n%s  cka-helm-practice · exam 3%s — %s Helm tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 3%s — %s Helm tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sReal public charts and a real OCI registry. Needs internet access.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-20s %s\n" "$CL"           "list every task with its points and status"
@@ -841,7 +842,7 @@ case "${1:-list}" in
   # all of them; these three have no dashboard, so it lists the tasks.
   info) exec "$0" list ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 3)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 3)\n" "$VERSION" ;;
   *)
     printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"
     usage; exit 1 ;;

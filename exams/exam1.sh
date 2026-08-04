@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam.sh
+#  cka-practice · exam1.sh
 #  13 CKA-style Helm tasks. 100 points. Pass mark: 66.
 #
-#    ./exam.sh            list the tasks
-#    ./exam.sh q 4        show task 4
-#    ./exam.sh grade      grade everything, print the score
-#    ./exam.sh grade 4    grade task 4 only
-#    ./exam.sh solve 4    the commands that solve task 4
-#    ./exam.sh explain 4  step-by-step walkthrough of task 4
-#    ./exam.sh help       full usage
-#    ./exam.sh version    print the exam suite version
-#    ./exam.sh reset      re-seed the cluster (runs setup.sh)
+#    ./exams/exam1.sh            list the tasks
+#    ./exams/exam1.sh q 4        show task 4
+#    ./exams/exam1.sh grade      grade everything, print the score
+#    ./exams/exam1.sh grade 4    grade task 4 only
+#    ./exams/exam1.sh solve 4    the commands that solve task 4
+#    ./exams/exam1.sh explain 4  step-by-step walkthrough of task 4
+#    ./exams/exam1.sh help       full usage
+#    ./exams/exam1.sh version    print the exam suite version
+#    ./exams/exam1.sh reset      re-seed the cluster (runs setup1.sh)
 # ============================================================
 set -uo pipefail
 
@@ -19,14 +19,15 @@ BASE="${HOME}"
 ANS="$BASE/answers"
 REPO_NAME="ckarepo"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
 # When activate.sh is loaded the commands are 'q 1' / 'grade';
 # otherwise they have to go through the script.
-if [ -n "${EXAM_HOME:-}" ]; then P=""; else P="./exam.sh "; fi
+if [ -n "${EXAM_HOME:-}" ]; then P=""; else P="./exams/exam1.sh "; fi
 
 TOTAL=13
 # Plain indexed arrays: every key is an integer, so this works on
@@ -573,10 +574,10 @@ grade_all(){
 }
 
 usage(){
-  printf "\n%s  cka-helm-practice%s — %s Helm tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice%s — %s Helm tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sYou solve them against a real cluster; grading inspects real state.%s\n\n" "$D" "$N"
-  # Listing is 'exam' once activated, but a bare './exam.sh' otherwise.
-  local list_cmd; if [ -z "$P" ]; then list_cmd="exam"; else list_cmd="./exam.sh"; fi
+  # Listing is 'exam' once activated, but a bare './exam1.sh' otherwise.
+  local list_cmd; if [ -z "$P" ]; then list_cmd="exam"; else list_cmd="./exams/exam1.sh"; fi
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-20s %s\n" "$list_cmd"      "list every task with its points and status"
   printf "    %-20s %s\n" "${P}q N"        "show task N"
@@ -592,7 +593,7 @@ usage(){
     printf "    q, grade, explain and solve complete task numbers with Tab.\n\n"
   else
     printf "%s  SHORTER COMMANDS%s\n\n" "$BO" "$N"
-    printf "    Load the shell functions once and drop the './exam.sh' prefix:\n\n"
+    printf "    Load the shell functions once and drop the './exam1.sh' prefix:\n\n"
     printf "      source %s/activate.sh\n\n" "$HERE"
     printf "    Then: %sexam%s, %sq 4%s, %sgrade%s, %sexplain 4%s from any directory.\n\n" \
       "$BO" "$N" "$BO" "$N" "$BO" "$N" "$BO" "$N"
@@ -602,7 +603,7 @@ usage(){
   printf "    instead; those say so and live in %s/\n" "$ANS"
   printf "    Tasks 7 and 8 are a pair: read 8 before you run 7.\n"
   printf "    Tasks 9, 10, 11 and 13 build on each other in that order.\n\n"
-  printf "    %sIf the Killercoda session expires, run %s/setup.sh again.%s\n\n" "$D" "$HERE" "$N"
+  printf "    %sIf the Killercoda session expires, run %s/setup1.sh again.%s\n\n" "$D" "$HERE" "$N"
 }
 
 case "${1:-list}" in
@@ -630,12 +631,12 @@ case "${1:-list}" in
     printf "\n%s  ── Step by step ──%s\n\n%s\n\n" "$Y" "$N" "${WALK[$2]}"
     printf "%s  ── The commands, together ──%s\n\n%s\n\n" "$Y" "$N" "${SOL[$2]}"
     printf "  %scheck your work:  %sgrade %s%s\n\n" "$D" "$P" "$2" "$N" ;;
-  reset) bash "$HERE/setup.sh" ;;
+  reset) bash "$HERE/setup1.sh" ;;
   # 'info' exists on every exam so the cka dispatcher has one word for
   # all of them; these three have no dashboard, so it lists the tasks.
   info) exec "$0" list ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 1)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 1)\n" "$VERSION" ;;
   *)
     printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"
     usage; exit 1 ;;

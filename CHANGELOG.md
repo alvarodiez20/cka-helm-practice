@@ -9,6 +9,155 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [2.0.0] — 2026-08-04
+
+The repository is now **`cka-practice`**. It was `cka-helm-practice`, and three
+of the eleven exams are about Helm — the name had been wrong since the fourth
+one landed. GitHub redirects the old URL permanently, so existing installs and
+the old `curl | bash` one-liner keep working; the install directory changes to
+`~/cka-practice` for anyone installing fresh.
+
+Also: a Kustomize exam, a repository laid out in folders, a dashboard grouped
+by CKA domain rather than by the order the exams happened to be written in,
+and a CI pipeline that checks the things this project has actually broken.
+
+### Added
+
+- **Exam 11 — `kustomize`.** Thirteen tasks, 100 points. *"Use Helm and
+  Kustomize to install cluster components"* is a named competency under Cluster
+  Architecture — 25% of the exam — and this suite covered only the Helm half of
+  it for its first ten releases.
+
+  It covers `resources` and `apply -k`, `namespace`/`namePrefix`, the
+  `labels`-versus-`commonLabels` selector trap, the `images` and `replicas`
+  transformers, `configMapGenerator` and why the hash suffix exists,
+  `disableNameSuffixHash` per generator versus file-wide, `secretGenerator`,
+  a prod overlay with a strategic-merge patch, a JSON 6902 patch, rendering
+  without applying, and a kustomization with three stacked faults that surface
+  one at a time.
+
+  Its distinguishing rule: **every transformation is graded on the applied
+  result AND on the base manifests being untouched.** Editing
+  `base/deployment.yaml` to change the image produces an identical cluster and
+  scores zero, because the whole point of the tool is that you do not.
+
+- **`CONTRIBUTING.md`** — the anatomy of an exam, the conventions that are
+  load-bearing, and the fail-closed rule for graders stated as a rule rather
+  than as folklore.
+
+- **`SECURITY.md`** — what this software does to a machine, in a table. It
+  tells people to pipe a URL into `bash` as root and then deliberately breaks
+  their kubelet; saying so plainly is the difference between "unusual" and
+  "suspicious".
+
+- **`docs/publishing-checklist.md`** — an honest audit of what is still
+  missing, led by the largest gap: nothing anywhere proves that a *correct*
+  answer scores.
+
+- **`scripts/solve-and-grade.sh`, and a weekly end-to-end workflow.** The
+  grader audit proves nothing scores against no cluster. Nothing proved the
+  other direction — that a *correct* answer scores — so a grader could have
+  been unsatisfiable and every check in this repo would still have been
+  green. The new script seeds an exam, asserts 0/100 before solving, applies
+  either `tests/solutions/N.sh` or each task's own `solve` output, and
+  requires 100/100. `.github/workflows/e2e.yml` runs it weekly on `kind`.
+
+  Exam 11 was verified with it on a Killercoda playground (Kubernetes
+  v1.35.1, kustomize v5.7.1): 0/100 seeded, 100/100 solved. That run found
+  three bugs in the exam's own walkthroughs, fixed below.
+
+- **Three new CI jobs.** `cli` exercises `cka.sh`, `activate.sh` and every
+  exam's `list`/`help`/`version` — nothing used to run the entry points at
+  all. `install` runs `bootstrap.sh` for real against the checkout over local
+  HTTP. `docs` fails if an exam is undocumented or a relative link resolves to
+  nothing.
+
+### Changed
+
+- **Everything moved into folders.** `exam*.sh` and `setup*.sh` are now in
+  `exams/`; the README's per-exam tables, troubleshooting, internals and
+  release process are in `docs/`. The repository root was thirty-one files and
+  is now eight.
+
+- **`exam.sh` and `setup.sh` are `exams/exam1.sh` and `exams/setup1.sh`.** Exam
+  1 was the only one without a number, which every script that iterated over
+  the set had to special-case.
+
+- **The dashboard groups by CKA domain, heaviest first.** The exam numbers are
+  the order they were written in and reading them top to bottom told you
+  nothing about what to revise. The numbers are unchanged and still work
+  everywhere; only the presentation moved. `cka help` groups the same way.
+
+- **The README is a front page again.** It was 958 lines and opened with
+  fourteen badges and a table of contents. It is now the pitch, the five
+  commands that are the whole interface, and links.
+
+- **`shellcheck` blocks.** It ran with `continue-on-error` for eleven releases
+  on the grounds that the backlog had never been triaged — which meant nobody
+  read it and it caught nothing. Triaged, the backlog was three codes, all
+  deliberate. They are excluded by name with a reason each; everything else
+  now fails the build.
+
+- **The release workflow re-verifies at the tagged commit.** It re-runs
+  shellcheck, the grader audit and the task render against the exact tree
+  being shipped, requires the tag to be an ancestor of `main` — `curl | bash`
+  installs from `main`, so a tag off a branch would publish something nobody
+  can install — and does a full install of the tagged tree before creating the
+  release.
+
+- **`activate.sh` generates the numbered commands.** They were 77 hand-written
+  one-liners. A list that long is edited by copy-paste and nobody diffs it,
+  which is how exam 10's functions came to be defined twice.
+
+- **`bootstrap.sh` derives its file list** from an exam count instead of
+  carrying four lines of literal filenames that a new exam had to be added to
+  by hand. An exam can no longer exist in the repo and fail to install.
+
+- **`demo/record-demo.sh` types the current interface**, and is selected by
+  exam *name* (`DEMO=kustomize`) rather than number. The default script is now
+  a tour of the five verbs, which does not go stale when the exam set changes.
+
+### Fixed
+
+- **Exam 11 task 12 documented its three faults in the wrong order.** They
+  surface in the order kustomize works — unmarshal the file, check the kind,
+  resolve what it points at — so the `namePrefix` shape error hides both of
+  the others. The walkthrough claimed kind → path → shape; it is shape →
+  kind → path. It now says so, with the verbatim error for each.
+
+- **Exam 11 task 13's walkthrough said the prod overlay renders six
+  objects.** It renders five. The grader counts for itself, so this misled
+  the candidate rather than mis-scoring them.
+
+- **Exam 11 task 3's walkthrough understated `commonLabels`.** `apply -k` is
+  not a transaction: the Service is accepted and the Deployment is rejected
+  on its immutable selector, leaving you half-applied. The walkthrough now
+  says that, quotes the real error, and mentions the deprecation warning
+  kustomize v5 emits.
+
+### Removed
+
+- **The demo GIF.** It still typed `exam3`, `q3 2` and `grade3 2` — commands
+  replaced by `cka use`, `q` and `grade` several releases earlier — so the
+  first thing a reader saw taught them an interface the README no longer
+  documented. Recordings are build output now and `demo/out/` is gitignored;
+  record one and attach it to the release. `demo/README.md` says why.
+
+### Migration
+
+Nothing you have to do mid-session. The old numbered commands — `exam6`,
+`q6 4`, `grade7`, `explain3 2` — all still work, and your answer directories
+(`~/answers`, `~/answers2`, …) are untouched.
+
+Two things to know:
+
+- **Re-run `bootstrap.sh`.** It installs to `~/cka-practice` now. The old
+  `~/cka-helm-practice` directory keeps working until you delete it, but it
+  will not receive updates, and you will have two `source` lines in
+  `~/.bashrc` until you remove the old one.
+- **If you clone rather than bootstrap**, the scripts moved: `./exam7.sh q 3`
+  is now `./exams/exam7.sh q 3`. `cka` and the shell functions are unaffected.
+
 ## [1.11.1] — 2026-08-02
 
 Reported from a fresh Killercoda install: `bootstrap.sh` seeded exam 1, said so,
@@ -697,7 +846,7 @@ Helm 4 kept and needed no changes.
 
 ### Added
 
-- `demo/out/cka-helm-practice-exam3.{cast,gif}` — the recording, made on a real
+- `demo/out/cka-practice-exam3.{cast,gif}` — the recording, made on a real
   Killercoda playground, and linked at the top of the README.
 - `demo/README.md`: a paste-ready Killercoda block, including the two things that
   otherwise bite — `bootstrap.sh` does not fetch `record-demo.sh`, and Killercoda
@@ -808,20 +957,21 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
-[1.11.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.11.1
-[1.11.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.11.0
-[1.10.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.10.0
-[1.9.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.9.0
-[1.8.2]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.2
-[1.8.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.1
-[1.8.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.8.0
-[1.7.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.7.0
-[1.6.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.6.0
-[1.5.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.5.0
-[1.4.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.4.0
-[1.3.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.3.0
-[1.2.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.1
-[1.2.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.2.0
-[1.1.1]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.1
-[1.1.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.1.0
-[1.0.0]: https://github.com/alvarodiez20/cka-helm-practice/releases/tag/v1.0.0
+[2.0.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v2.0.0
+[1.11.1]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.11.1
+[1.11.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.11.0
+[1.10.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.10.0
+[1.9.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.9.0
+[1.8.2]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.8.2
+[1.8.1]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.8.1
+[1.8.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.8.0
+[1.7.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.7.0
+[1.6.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.6.0
+[1.5.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.5.0
+[1.4.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.4.0
+[1.3.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.3.0
+[1.2.1]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.2.1
+[1.2.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.2.0
+[1.1.1]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.1.1
+[1.1.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.1.0
+[1.0.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.0.0

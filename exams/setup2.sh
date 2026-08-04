@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · setup2.sh
+#  cka-practice · setup2.sh
 #  Seeds the SECOND Helm exam. It uses its own local repo
 #  (port 8880), its own namespaces and its own answers
-#  directory, so it coexists with setup.sh.
+#  directory, so it coexists with setup1.sh.
 # ============================================================
 set -uo pipefail
 
@@ -292,11 +292,12 @@ helm repo remove "$REPO_NAME" >/dev/null 2>&1
 ok "repo '$REPO_NAME' removed on purpose (that is task 1)"
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$HERE/.." && pwd)"
 
 # Make the exam commands available in every new shell.
-SRC_LINE="source ${HERE}/activate.sh"
-if [ -f "${HERE}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
-  printf '\n# cka-helm-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
+SRC_LINE="source ${ROOT}/activate.sh"
+if [ -f "${ROOT}/activate.sh" ] && ! grep -qF "$SRC_LINE" "${HOME}/.bashrc" 2>/dev/null; then
+  printf '\n# cka-practice\n%s\n' "$SRC_LINE" >> "${HOME}/.bashrc"
   ok "exam commands added to ~/.bashrc"
 fi
 

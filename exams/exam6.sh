@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam6.sh
+#  cka-practice · exam6.sh
 #  13 CKA-style general troubleshooting tasks. 100 points.
 #  Pass mark: 66.
 #
@@ -9,12 +9,12 @@
 #  one covers the control plane, the pod lifecycle, RBAC,
 #  storage, quotas and events.
 #
-#    ./exam6.sh            list the tasks
-#    ./exam6.sh q 4        show task 4
-#    ./exam6.sh grade      grade everything
-#    ./exam6.sh explain 4  walkthrough
-#    ./exam6.sh triage     every unhealthy object, one screen
-#    ./exam6.sh restore    undo everything setup6.sh broke
+#    ./exams/exam6.sh            list the tasks
+#    ./exams/exam6.sh q 4        show task 4
+#    ./exams/exam6.sh grade      grade everything
+#    ./exams/exam6.sh explain 4  walkthrough
+#    ./exams/exam6.sh triage     every unhealthy object, one screen
+#    ./exams/exam6.sh restore    undo everything setup6.sh broke
 # ============================================================
 set -uo pipefail
 
@@ -23,7 +23,8 @@ ANS="$BASE/answers6"
 EX6="$BASE/exam6"
 NS="tshoot"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -33,8 +34,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam6.sh"; CQ="./exam6.sh q"; CG="./exam6.sh grade"
-  CE="./exam6.sh explain"; CS="./exam6.sh solve"; CH="./exam6.sh help"
+  CL="./exams/exam6.sh"; CQ="./exams/exam6.sh q"; CG="./exams/exam6.sh grade"
+  CE="./exams/exam6.sh explain"; CS="./exams/exam6.sh solve"; CH="./exams/exam6.sh help"
 fi
 
 TOTAL=13
@@ -911,7 +912,7 @@ grade_all(){
 }
 
 usage(){
-  printf "\n%s  cka-helm-practice · exam 6%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 6%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sGeneral cluster troubleshooting — 30%% of the CKA, the biggest domain.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-20s %s\n" "$CL"          "list every task with its points and status"
@@ -975,6 +976,6 @@ case "${1:-list}" in
     else printf "\n  %sno restore script at %s/restore.sh — run setup6.sh first%s\n\n" "$R" "$EX6" "$N"; exit 1; fi ;;
   reset) bash "$HERE/setup6.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 6)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 6)\n" "$VERSION" ;;
   *) printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"; usage; exit 1 ;;
 esac

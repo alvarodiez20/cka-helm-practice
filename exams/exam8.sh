@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam8.sh
+#  cka-practice · exam8.sh
 #  13 CKA-style cluster lifecycle tasks: etcd backup and
 #  restore, kubeadm, certificates, node maintenance.
 #  100 points. Pass mark: 66.
 #
-#    ./exam8.sh q 4 · grade · explain 4 · cplaneinfo
+#    ./exams/exam8.sh q 4 · grade · explain 4 · cplaneinfo
 # ============================================================
 set -uo pipefail
 
@@ -21,7 +21,8 @@ PKITAR="${CKA_E8_PKITAR:-/opt/pki-etcd.tar}"
 MANIFESTS="${CKA_E8_MANIFESTS:-/etc/kubernetes/manifests}"
 PKIDIR="${CKA_E8_PKI:-/etc/kubernetes/pki}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -31,8 +32,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam8.sh"; CQ="./exam8.sh q"; CG="./exam8.sh grade"
-  CE="./exam8.sh explain"; CS="./exam8.sh solve"; CH="./exam8.sh help"
+  CL="./exams/exam8.sh"; CQ="./exams/exam8.sh q"; CG="./exams/exam8.sh grade"
+  CE="./exams/exam8.sh explain"; CS="./exams/exam8.sh solve"; CH="./exams/exam8.sh help"
 fi
 
 ETCDFLAGS="--endpoints=https://127.0.0.1:2379 \\
@@ -893,7 +894,7 @@ grade_all(){
   if [ "$pct" -ge 66 ]; then printf "%sPASS%s\n\n" "$G$BO" "$N"; else printf "%sFAIL%s %s(the CKA pass mark is 66)%s\n\n" "$R$BO" "$N" "$D" "$N"; fi
 }
 usage(){
-  printf "\n%s  cka-helm-practice · exam 8%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 8%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %setcd, kubeadm, certificates and node maintenance.%s\n\n" "$D" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-18s %s\n" "$CL" "list every task with its points and status"
@@ -947,6 +948,6 @@ case "${1:-list}" in
   cplaneinfo|info) cplaneinfo ;;
   reset) bash "$HERE/setup8.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 8)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 8)\n" "$VERSION" ;;
   *) printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"; usage; exit 1 ;;
 esac

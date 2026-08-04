@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · cka.sh
-#  One entry point for all ten exams.
+#  cka-practice · cka.sh
+#  One entry point for all eleven exams.
 #
 #  The old interface needed the exam number baked into every
 #  command name — 'q6 6' meaning task 6 of exam 6, out of 72
@@ -20,28 +20,47 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+EXAMDIR="$HERE/exams"
 VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
 STATE="${CKA_STATE:-$HOME/.cka-current}"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
 
-# number | name | script | one-line topic
-# Kept as a flat list so it works on bash 3.2 (no associative arrays).
-#   number | name | exam script | setup script | marker namespaces | topic
-# The marker namespaces are what "is this exam seeded?" is decided on: the
+# Kept as a flat pipe-separated list so it works on bash 3.2, which has no
+# associative arrays and is what macOS still ships.
+#
+#   number | name | exam script | setup script | marker namespaces | topic | domain
+#
+# The MARKER NAMESPACES are what "is this exam seeded?" is decided on: the
 # namespaces its own seed creates, which nothing else in the cluster owns.
+#
+# The DOMAIN is the CKA curriculum domain the exam belongs to. Exam numbers are
+# historical — they are the order the exams were written in, and they are load
+# bearing (answer directories, the numbered commands, everyone's muscle memory),
+# so they do not move. The dashboard and the docs group by DOMAIN instead, which
+# is the order you would actually revise in. See domain_order below.
 EXAMS="\
-1|helm-core|exam.sh|setup.sh|apps hidden-77|Helm: install, rollback, values, packaging
-2|helm-values|exam2.sh|setup2.sh|stage broken-77|Helm: repos, values files, --atomic, subcharts
-3|helm-oci|exam3.sh|setup3.sh|limbo|Helm: real charts, CRDs, OCI registries
-4|netpol|exam4.sh|setup4.sh|frontend backend monitoring shop netdebug|NetworkPolicy and network troubleshooting
-5|nodes|exam5.sh|setup5.sh|node-lab|Worker node failures: kubelet, taints, static pods
-6|tshoot|exam6.sh|setup6.sh|tshoot|General troubleshooting: control plane, pods, RBAC
-7|storage|exam7.sh|setup7.sh|store-lab|Storage: PV, PVC, StorageClass, StatefulSet volumes
-8|cluster|exam8.sh|setup8.sh|drain-lab|etcd backup and restore, kubeadm, certificates
-9|workloads|exam9.sh|setup9.sh|work-lab|Workloads and scheduling: rollouts, Jobs, affinity
-10|gateway|exam10.sh|setup10.sh|edge-lab|Ingress, Gateway API, and CNI troubleshooting"
+1|helm-core|exam1.sh|setup1.sh|apps hidden-77|Helm: install, rollback, values, packaging|arch
+2|helm-values|exam2.sh|setup2.sh|stage broken-77|Helm: repos, values files, --atomic, subcharts|arch
+3|helm-oci|exam3.sh|setup3.sh|limbo|Helm: real charts, CRDs, OCI registries|arch
+4|netpol|exam4.sh|setup4.sh|frontend backend monitoring shop netdebug|NetworkPolicy and network troubleshooting|net
+5|nodes|exam5.sh|setup5.sh|node-lab|Worker node failures: kubelet, taints, static pods|tshoot
+6|tshoot|exam6.sh|setup6.sh|tshoot|General troubleshooting: control plane, pods, RBAC|tshoot
+7|storage|exam7.sh|setup7.sh|store-lab|Storage: PV, PVC, StorageClass, StatefulSet volumes|store
+8|cluster|exam8.sh|setup8.sh|drain-lab|etcd backup and restore, kubeadm, certificates|arch
+9|workloads|exam9.sh|setup9.sh|work-lab|Workloads and scheduling: rollouts, Jobs, affinity|work
+10|gateway|exam10.sh|setup10.sh|edge-lab|Ingress, Gateway API, and CNI troubleshooting|net
+11|kustomize|exam11.sh|setup11.sh|kust-lab|Kustomize: overlays, patches, generators, apply -k|arch"
+
+# The five CKA domains, in the order the dashboard shows them: heaviest first,
+# which is also a defensible revision order. key|weight|label
+DOMAINS="\
+tshoot|30%|Troubleshooting
+arch|25%|Cluster architecture, installation and configuration
+net|20%|Services and networking
+work|15%|Workloads and scheduling
+store|10%|Storage"
 
 # Exams 5, 6 and 10 break the cluster on purpose, so they are never seeded
 # without being asked for. Everything else is safe to build unattended.
@@ -57,14 +76,24 @@ script_of(){ field "$1" 3; }
 setup_of(){ field "$1" 4; }
 marker_of(){ field "$1" 5; }
 topic_of(){ field "$1" 6; }
+domain_of(){ field "$1" 7; }
 known(){ [ -n "$(num_of "$1")" ]; }
+
+# The exam numbers, grouped by domain and ordered heaviest domain first. This
+# is the order everything user-facing iterates in.
+domain_order(){
+  local key
+  printf '%s\n' "$DOMAINS" | while IFS='|' read -r key _ _; do
+    printf '%s\n' "$EXAMS" | awk -F'|' -v d="$key" '$7==d{print $1}'
+  done
+}
 destructive(){ case " $DESTRUCTIVE " in *" $(num_of "$1") "*) return 0 ;; *) return 1 ;; esac; }
 
 # ── is an exam actually present in the cluster? ─────────────
 # Selecting an exam used to print its task list without ever looking at the
 # cluster, so 'cka use netpol' after a bootstrap that only seeded exam 1 gave
 # you thirteen tasks and nothing to solve them against. One 'kubectl get ns'
-# per process answers it for all ten.
+# per process answers it for all of them.
 ALL_NS=""
 ns_snapshot(){
   [ -n "$ALL_NS" ] && return 0
@@ -92,10 +121,10 @@ current(){ # the selected exam number, defaulting to 1
 run(){ # run <exam> <args...>
   local n; n="$(num_of "$1")"; shift
   local s; s="$(script_of "$n")"
-  [ -n "$s" ] && [ -f "$HERE/$s" ] || { printf "\n  %sexam %s is not installed%s\n\n" "$R" "$n" "$N" >&2; return 1; }
+  [ -n "$s" ] && [ -f "$EXAMDIR/$s" ] || { printf "\n  %sexam %s is not installed%s\n\n" "$R" "$n" "$N" >&2; return 1; }
   # Invoked through bash rather than executed directly, so a script that has
   # lost its executable bit (an editor, a careless sed -i) still runs.
-  EXAM_HOME="${EXAM_HOME:-$HERE}" bash "$HERE/$s" "$@"
+  EXAM_HOME="${EXAM_HOME:-$HERE}" bash "$EXAMDIR/$s" "$@"
 }
 
 score_of(){ # prints "got/max", or "-" if the exam cannot be graded here
@@ -104,40 +133,54 @@ score_of(){ # prints "got/max", or "-" if the exam cannot be graded here
 }
 
 # ── the dashboard ───────────────────────────────────────────
+# Grouped by CKA domain, heaviest domain first, because the exam NUMBERS are
+# just the order these were written in and reading them top to bottom told you
+# nothing about what to revise. The numbers are still shown and still work.
+score_cell(){ # score_cell <exam> <"scores"|"">
+  # An unseeded exam has no score to report and grading it would only waste a
+  # few seconds arriving at 0, so say so and skip the grader entirely.
+  if ! seeded "$1"; then printf '%s' "${D}not seeded${N}"; return; fi
+  if [ "${2:-}" != "scores" ]; then printf '%s' "$D·$N"; return; fi
+  local sc got; sc="$(score_of "$1")"
+  case "$sc" in
+    -)   printf '%s' "${D}not seeded${N}" ;;
+    0/*) printf '%s' "${D}${sc}${N}" ;;
+    *)   got="${sc%%/*}"
+         if [ "${got:-0}" -ge 66 ]; then printf '%s' "${G}${sc}${N}"
+         else printf '%s' "${Y}${sc}${N}"; fi ;;
+  esac
+}
+
 dashboard(){ # $1 = "scores" to grade every exam (slow)
-  local cur; cur="$(current)"
-  printf "\n%s  cka-helm-practice%s %sv%s%s — ten exams, 100 points each, pass mark 66\n\n" \
-    "$BO" "$N" "$D" "$VERSION" "$N"
-  printf "  %s  %-4s %-13s %-52s %s%s\n" "$D" "" "NAME" "TOPIC" "SCORE" "$N"
-  printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script setup marker topic; do
-    local mark="  "; [ "$n" = "$cur" ] && mark="${G}▸ ${N}"
-    local sc="$D·$N"
-    # An unseeded exam has no score to report and grading it would only waste
-    # a few seconds arriving at 0, so say so and skip the grader entirely.
-    if ! seeded "$n"; then
-      sc="${D}not seeded${N}"
-    elif [ "${1:-}" = "scores" ]; then
-      sc="$(score_of "$n")"
-      case "$sc" in
-        -) sc="${D}not seeded${N}" ;;
-        0/*) sc="${D}${sc}${N}" ;;
-        *) local got="${sc%%/*}"
-           if [ "${got:-0}" -ge 66 ]; then sc="${G}${sc}${N}"; else sc="${Y}${sc}${N}"; fi ;;
-      esac
-    fi
-    printf "  %s%-4s %-13s %-52s %s\n" "$mark" "$n" "$name" "$topic" "$sc"
+  local cur dkey dweight dlabel n mark
+  cur="$(current)"
+  printf "\n%s  cka-practice%s %sv%s%s — %s exams, 100 points each, pass mark 66\n" \
+    "$BO" "$N" "$D" "$VERSION" "$N" "$(printf '%s\n' "$EXAMS" | wc -l | tr -d ' ')"
+  printf "  %sgrouped by CKA domain, heaviest first%s\n" "$D" "$N"
+
+  printf '%s\n' "$DOMAINS" | while IFS='|' read -r dkey dweight dlabel; do
+    printf "\n  %s%s  %s%s\n" "$BO" "$dweight" "$dlabel" "$N"
+    printf '%s\n' "$EXAMS" | awk -F'|' -v d="$dkey" '$7==d' \
+      | while IFS='|' read -r n name script setup marker topic domain; do
+          mark="  "; [ "$n" = "$cur" ] && mark="${G}▸ ${N}"
+          # %2s, not %-4s: right-aligned so 1 and 11 share a column edge, and
+          # the topic column is 52 wide because the longest one is 51.
+          printf "  %s%2s  %-13s %-52s %s\n" \
+            "$mark" "$n" "$name" "$topic" "$(score_cell "$n" "${1:-}")"
+        done
   done
+
   printf "\n  %sselected:%s %s%s%s  %s(%s)%s\n" "$D" "$N" "$BO" "$(name_of "$cur")" "$N" \
     "$D" "$(topic_of "$cur")" "$N"
   if [ "${1:-}" != "scores" ]; then
-    printf "  %scka scores%s grades all ten — takes a minute.\n" "$D" "$N"
+    printf "  %scka scores%s grades every exam — takes a couple of minutes.\n" "$D" "$N"
   fi
   printf "\n  %scka use <name>%s   switch     %sq N · grade · explain N · next%s\n\n" \
     "$BO" "$N" "$BO" "$N"
 }
 
 usage(){
-  printf "\n%s  cka%s — one entry point for all ten exams\n\n" "$BO" "$N"
+  printf "\n%s  cka%s — one entry point for every exam\n\n" "$BO" "$N"
   printf "%s  PICK AN EXAM%s\n\n" "$BO" "$N"
   printf "    %-24s %s\n" "cka" "the dashboard: every exam, and which is selected"
   printf "    %-24s %s\n" "cka scores" "the same, plus your score in each (slow)"
@@ -158,9 +201,14 @@ usage(){
   printf "%s  ANY EXAM, WITHOUT SELECTING IT%s\n\n" "$BO" "$N"
   printf "    %-24s %s\n" "cka storage q 3" "task 3 of the storage exam"
   printf "    %-24s %s\n\n" "cka 7 grade" "the same, by number"
-  printf "%s  THE NAMES%s\n\n" "$BO" "$N"
-  printf '%s\n' "$EXAMS" | while IFS='|' read -r n name script setup marker topic; do
-    printf "    %-3s %-13s %s\n" "$n" "$name" "$topic"
+  printf "%s  THE NAMES%s  %s(by CKA domain — the number is just the order they were written)%s\n" \
+    "$BO" "$N" "$D" "$N"
+  printf '%s\n' "$DOMAINS" | while IFS='|' read -r dkey dweight dlabel; do
+    printf "\n    %s%s %s%s\n" "$D" "$dweight" "$dlabel" "$N"
+    printf '%s\n' "$EXAMS" | awk -F'|' -v d="$dkey" '$7==d' \
+      | while IFS='|' read -r n name script setup marker topic domain; do
+          printf "    %2s  %-13s %s\n" "$n" "$name" "$topic"
+        done
   done
   printf "\n  %sThe old numbered commands (q6 4, grade7, exam3) still work.%s\n\n" "$D" "$N"
 }
@@ -226,7 +274,7 @@ case "${1:-dashboard}" in
       if [ "$ALL_NS" = "__no_cluster__" ]; then
         printf "  %sno cluster reachable — cannot seed '%s'. The tasks below are%s\n" "$R" "$(name_of "$n")" "$N" >&2
         printf "  %sstill readable; 'reset' will build it once kubectl works.%s\n\n" "$D" "$N" >&2
-      elif [ ! -f "$HERE/$seed" ]; then
+      elif [ ! -f "$EXAMDIR/$seed" ]; then
         printf "  %s'%s' is not seeded and %s is missing%s\n\n" "$R" "$(name_of "$n")" "$seed" "$N" >&2
       elif destructive "$n" && [ -t 0 ]; then
         # These break a node or the scheduler. Never without being asked.
@@ -236,7 +284,7 @@ case "${1:-dashboard}" in
         printf "  seed it now? [y/N] "
         read -r reply
         case "$reply" in
-          [yY]*) EXAM_HOME="$HERE" bash "$HERE/$seed" ;;
+          [yY]*) EXAM_HOME="$HERE" bash "$EXAMDIR/$seed" ;;
           *) printf "\n  %sleft alone — run 'reset' when you want it%s\n\n" "$D" "$N"; exit 0 ;;
         esac
       elif destructive "$n"; then
@@ -245,14 +293,14 @@ case "${1:-dashboard}" in
         exit 0
       else
         printf "  %s'%s' is not seeded yet — building it now%s\n" "$D" "$(name_of "$n")" "$N"
-        EXAM_HOME="$HERE" bash "$HERE/$seed" \
+        EXAM_HOME="$HERE" bash "$EXAMDIR/$seed" \
           || { printf "\n  %sseeding failed — fix the above and run 'reset'%s\n\n" "$R" "$N" >&2; exit 1; }
       fi
     fi
     run "$n" list ;;
   next)    next_task "${2:-}" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s\n" "$VERSION" ;;
   *)
     # 'cka <exam> <cmd> ...' addresses one exam directly;
     # 'cka <cmd> ...' acts on the selected one.

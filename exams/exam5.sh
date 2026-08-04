@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================
-#  cka-helm-practice · exam5.sh
+#  cka-practice · exam5.sh
 #  13 CKA-style worker node failure tasks. 100 points.
 #  Pass mark: 66.
 #
-#    ./exam5.sh            list the tasks
-#    ./exam5.sh q 4        show task 4
-#    ./exam5.sh grade      grade everything, print the score
-#    ./exam5.sh explain 4  step-by-step walkthrough of task 4
-#    ./exam5.sh nodeinfo   a quick health dashboard for the node
-#    ./exam5.sh restore    undo everything setup5.sh broke
-#    ./exam5.sh help       full usage
-#    ./exam5.sh reset      re-seed (runs setup5.sh)
+#    ./exams/exam5.sh            list the tasks
+#    ./exams/exam5.sh q 4        show task 4
+#    ./exams/exam5.sh grade      grade everything, print the score
+#    ./exams/exam5.sh explain 4  step-by-step walkthrough of task 4
+#    ./exams/exam5.sh nodeinfo   a quick health dashboard for the node
+#    ./exams/exam5.sh restore    undo everything setup5.sh broke
+#    ./exams/exam5.sh help       full usage
+#    ./exams/exam5.sh reset      re-seed (runs setup5.sh)
 # ============================================================
 set -uo pipefail
 
@@ -20,7 +20,8 @@ ANS="$BASE/answers5"
 EX5="$BASE/exam5"
 NODE="${CKA_NODE:-node01}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-VERSION="$(cat "$HERE/VERSION" 2>/dev/null || echo "unknown")"
+ROOT="$(cd "$HERE/.." && pwd)"
+VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo "unknown")"
 
 if [ -t 1 ]; then G=$'\e[32m';R=$'\e[31m';Y=$'\e[33m';B=$'\e[36m';D=$'\e[2m';BO=$'\e[1m';N=$'\e[0m'
 else G="";R="";Y="";B="";D="";BO="";N=""; fi
@@ -30,8 +31,8 @@ if [ -n "${EXAM_HOME:-}" ]; then
   # selected with 'cka use'. See cka.sh.
   CL="list"; CQ="q"; CG="grade"; CE="explain"; CS="solve"; CH="examhelp"
 else
-  CL="./exam5.sh"; CQ="./exam5.sh q"; CG="./exam5.sh grade"
-  CE="./exam5.sh explain"; CS="./exam5.sh solve"; CH="./exam5.sh help"
+  CL="./exams/exam5.sh"; CQ="./exams/exam5.sh q"; CG="./exams/exam5.sh grade"
+  CE="./exams/exam5.sh explain"; CS="./exams/exam5.sh solve"; CH="./exams/exam5.sh help"
 fi
 
 SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=8 -o BatchMode=yes"
@@ -931,7 +932,7 @@ grade_all(){
 }
 
 usage(){
-  printf "\n%s  cka-helm-practice · exam 5%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
+  printf "\n%s  cka-practice · exam 5%s — %s tasks, 100 points, pass mark 66\n" "$BO" "$N" "$TOTAL"
   printf "  %sWorker node failure troubleshooting. Target node: %s%s\n\n" "$D" "$NODE" "$N"
   printf "%s  COMMANDS%s\n\n" "$BO" "$N"
   printf "    %-20s %s\n" "$CL"           "list every task with its points and status"
@@ -1001,7 +1002,7 @@ case "${1:-list}" in
     else printf "\n  %sno restore script at %s/restore.sh — run setup5.sh first%s\n\n" "$R" "$EX5" "$N"; exit 1; fi ;;
   reset) bash "$HERE/setup5.sh" ;;
   help|-h|--help) usage ;;
-  version|-v|--version) printf "cka-helm-practice %s (exam 5)\n" "$VERSION" ;;
+  version|-v|--version) printf "cka-practice %s (exam 5)\n" "$VERSION" ;;
   *)
     printf "\n  %sunknown command: %s%s\n" "$R" "$1" "$N"
     usage; exit 1 ;;

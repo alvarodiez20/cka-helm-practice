@@ -31,19 +31,19 @@ loops, which is why the GIF matters more than the wording here.
 > chart author decided to package their CRDs, so the first move is always
 > `helm show values` or unpacking the chart — not picking a flag.
 >
-> I built a practice suite for this: three Helm exams for the CKA, 39 tasks,
-> graded against a live cluster. The grader inspects release status, revision
+> I built a practice suite for this: eleven mock CKA exams, 143 tasks, graded
+> against a live cluster. The grader inspects release status, revision
 > numbers, stored value types and rendered manifests — not your answer file. So
 > guessing scores zero, which is the point.
 >
 > Runs in a Killercoda playground in about 30 seconds:
 >
-> `curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash`
+> `curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-practice/main/bootstrap.sh | bash`
 >
 > MIT. Every task has an `explain` walkthrough that covers what to inspect
 > first, what each flag does, and the trap that usually costs the points.
 >
-> github.com/alvarodiez20/cka-helm-practice
+> github.com/alvarodiez20/cka-practice
 
 ---
 
@@ -54,26 +54,27 @@ loops, which is why the GIF matters more than the wording here.
 >
 > So I wrote a grader instead of a question list.
 >
-> Three exams, 39 tasks, 100 points each, 66 to pass — the real CKA mark. Every
+> Eleven exams, 143 tasks, 100 points each, 66 to pass — the real CKA mark. Every
 > task is something you do to a live cluster, and grading inspects the cluster
 > afterwards: release status, revision numbers, whether a value was stored as a
 > string or coerced to a number, whether the rendered manifest contains what it
 > should. There is no answer key to match against, so `--set image.tag=1.25`
 > and `--set-string image.tag=1.25` score differently — as they should.
 >
-> Exams 1 and 2 serve their charts from localhost and work fully offline.
-> Exam 3 does not, on purpose: it uses the real sources the current exam asks
-> about — the Argo, Traefik and ingress-nginx repos, and an OCI registry.
+> It covers all five domains at their real weights — troubleshooting is 30% of
+> the exam and gets two exams to itself, three of which break a worker node,
+> the scheduler or the CNI on purpose so there is something genuine to
+> diagnose. Storage is 10% and gets one.
 >
 > One line in a Killercoda playground:
 >
-> `curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-helm-practice/main/bootstrap.sh | bash`
+> `curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-practice/main/bootstrap.sh | bash`
 >
-> Then `exam`, `q 2`, `grade`, and `explain 2` when a task beats you.
+> Then `cka use netpol`, `next`, `grade`, and `explain 4` when a task beats you.
 >
 > MIT, and the tasks are plain bash arrays — fork it and add your own.
 >
-> github.com/alvarodiez20/cka-helm-practice
+> github.com/alvarodiez20/cka-practice
 
 ---
 

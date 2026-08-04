@@ -10,6 +10,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Nothing in CI needs to write to the repository. The release workflow asks
+# for contents:write explicitly; this one should not have it.
+permissions:
+  contents: read
+
+# A second push to the same branch makes the first run irrelevant. Cancel it
+# rather than queueing behind it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   shell:
     name: shell syntax and lint
@@ -47,21 +58,36 @@ jobs:
           exit $fail
 
   shellcheck:
-    name: shellcheck (advisory)
+    name: shellcheck
     runs-on: ubuntu-latest
-    # ADVISORY ON PURPOSE, for now. These scripts lean on word splitting and
-    # unquoted globs deliberately in places, and the existing backlog has never
-    # been triaged, so a blocking run would go red on style rather than on
-    # anything that matters. Read the output, fix what is real, and when it is
-    # clean drop continue-on-error and let it block.
-    continue-on-error: true
+    # BLOCKING as of 2.0.0. It ran with continue-on-error for eleven releases
+    # because "the backlog has never been triaged" — which meant nobody ever
+    # read it and it caught nothing. The backlog turned out to be three codes,
+    # all deliberate, so they are excluded BY NAME with a reason each and
+    # everything else now fails the build.
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
       - name: warnings and above
         run: |
+          #  SC2086  word splitting is deliberate throughout (kubectl arg lists)
+          #  SC2181  '[ $? -eq 0 ]' after a long pipeline reads better here
+          #  SC1090  activate.sh is sourced from a computed path, by design
+          #  SC1091  ditto — shellcheck cannot follow it and does not need to
+          #  SC2034  loop counters, and the 'read -r' field names this repo's
+          #          pipe-separated tables are read with. Naming the fields you
+          #          skip is what makes those loops readable; renaming them all
+          #          to _ would not be an improvement.
+          #  SC2207  COMPREPLY=( $(compgen ...) ) is THE bash-completion idiom.
+          #          mapfile is bash 4; this repo supports bash 3.2.
+          #  SC2046  one site, exam5.sh: 'set -- $(dsready ...)' splits on
+          #          purpose to turn two words into $1 and $2.
+          #
+          # Anything not on this list is a real finding. Fix it; do not extend
+          # the list without a comment saying why.
           git ls-files '*.sh' \
-            | xargs -r shellcheck -S warning -e SC2086,SC2181,SC1090,SC1091
+            | xargs -r shellcheck -S warning \
+                -e SC2086,SC2181,SC1090,SC1091,SC2034,SC2207,SC2046
 
   graders:
     name: graders must fail closed
@@ -82,6 +108,138 @@ jobs:
         # commands, and English parses often enough to stay 'valid'.
         run: ./scripts/check-tasks.sh
 
+  cli:
+    name: the command surface works
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: cka.sh, activate.sh and every exam respond
+        # Nothing used to exercise the entry points at all. Every bug this
+        # catches has shipped at least once: a file renamed without updating
+        # cka.sh, a shell function bound to a script that moved, an exam in
+        # the table with no scripts behind it.
+        run: |
+          set -uo pipefail
+          fail=0
+          note(){ printf '  %s\n' "$*"; }
+          bad(){ printf '  x %s\n' "$*"; fail=1; }
+
+          # There is no cluster here. Everything below must still work: the
+          # dispatcher reads the filesystem, not the API server.
+          ./cka.sh help    >/dev/null || bad "cka.sh help exited non-zero"
+          ./cka.sh version >/dev/null || bad "cka.sh version exited non-zero"
+          ./cka.sh         >/dev/null || bad "the dashboard exited non-zero"
+          note "cka.sh help / version / dashboard ok"
+
+          # Every row of the dispatcher table must have both its scripts, and
+          # each must answer 'list', 'help' and 'version'.
+          while IFS='|' read -r n name exam setup _ _ _; do
+            case "$n" in ''|*[!0-9]*) continue ;; esac
+            [ -f "exams/$exam" ]  || { bad "$name -> exams/$exam does not exist"; continue; }
+            [ -f "exams/$setup" ] || { bad "$name -> exams/$setup does not exist"; continue; }
+            for verb in list help version; do
+              HOME="$(mktemp -d)" bash "exams/$exam" "$verb" >/dev/null 2>&1 \
+                || bad "exams/$exam $verb exited non-zero"
+            done
+            HOME="$(mktemp -d)" CKA_STATE="$(mktemp -u)" ./cka.sh "$name" list >/dev/null 2>&1 \
+              || bad "cka.sh $name list exited non-zero"
+            note "$n $name ok"
+          done < <(sed -n '/^EXAMS="/,/"$/p' cka.sh | sed 's/^EXAMS="//; s/"$//')
+
+          # activate.sh has to define every command the README promises. It
+          # generates them now, so a missing one means the generator or the
+          # exam count is wrong.
+          # shellcheck disable=SC1091
+          . ./activate.sh
+          for fn in cka q grade solve explain next info list reset examhelp \
+                    exam examreset netcheck nodeinfo triage storeinfo \
+                    cplaneinfo workinfo edgeinfo kustinfo \
+                    exam5restore exam6restore exam10restore; do
+            declare -F "$fn" >/dev/null || bad "activate.sh does not define '$fn'"
+          done
+          count=$(grep -cE '^[0-9]+\|[a-z-]+\|exam' cka.sh)
+          for i in $(seq 2 "$count"); do
+            for fn in "exam$i" "q$i" "grade$i" "solve$i" "explain$i" "exam${i}help" "exam${i}reset"; do
+              declare -F "$fn" >/dev/null || bad "activate.sh does not define '$fn'"
+            done
+          done
+          note "activate.sh defines every command for $count exams"
+          exit $fail
+
+  install:
+    name: bootstrap installs a complete set
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bootstrap.sh and the dispatcher agree
+        # bootstrap.sh downloads a list of paths from raw.githubusercontent.
+        # A file renamed here and not there produces a 404 at install time on
+        # somebody else's machine, which is the worst place to find out.
+        #
+        # The list used to be four lines of literal filenames maintained by
+        # hand. It is now derived from CKA_EXAM_COUNT, so the thing that can
+        # drift is that number — check it against the dispatcher table, and
+        # check both against what is actually on disk.
+        run: |
+          set -uo pipefail
+          fail=0
+
+          rows=$(grep -cE '^[0-9]+\|[a-z-]+\|exam' cka.sh)
+          count=$(sed -n 's/^COUNT="\${CKA_EXAM_COUNT:-\([0-9]*\)}"/\1/p' bootstrap.sh)
+          echo "  cka.sh lists      $rows exams"
+          echo "  bootstrap fetches ${count:-?} exams"
+          [ -n "$count" ] && [ "$rows" = "$count" ] || {
+            echo "  x they disagree — bootstrap would install a set cka.sh cannot dispatch"
+            fail=1
+          }
+
+          # Forwards: everything bootstrap.sh will ask for has to be here.
+          for i in $(seq 1 "${count:-0}"); do
+            for f in "exams/exam$i.sh" "exams/setup$i.sh"; do
+              [ -f "$f" ] || { echo "  x bootstrap.sh fetches '$f', which is not in the repo"; fail=1; }
+            done
+          done
+
+          # Backwards: an exam on disk that bootstrap.sh will not fetch would
+          # install as a task list with no seed behind it.
+          for f in $(git ls-files 'exams/exam*.sh' 'exams/setup*.sh'); do
+            n=$(printf '%s' "$f" | sed 's|.*[a-z]\([0-9]\{1,\}\)\.sh$|\1|')
+            [ "$n" -le "${count:-0}" ] 2>/dev/null \
+              || { echo "  x '$f' is in the repo but bootstrap.sh does not fetch it"; fail=1; }
+          done
+
+          # And nothing outside exams/ should be an exam script. The ':(glob)'
+          # magic prefix is required: in a plain git pathspec '*' matches '/'
+          # too, so 'exam*.sh' also matches 'exams/exam1.sh' and this check
+          # reported every exam as being at the repo root.
+          for f in $(git ls-files ':(glob)exam*.sh' ':(glob)setup*.sh'); do
+            echo "  x '$f' is at the repo root; exam scripts live in exams/"
+            fail=1
+          done
+
+          [ $fail = 0 ] && echo "  bootstrap.sh, cka.sh and the repo agree"
+          exit $fail
+
+      - name: a real install, over HTTP
+        # Run bootstrap.sh for real against this checkout served locally, so
+        # the whole fetch-and-chmod path is exercised rather than reasoned
+        # about. EXAM=none installs without needing a cluster to seed into.
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8123 --bind 127.0.0.1 >/dev/null 2>&1 &
+          sleep 2
+          sed 's|https://raw.githubusercontent.com/${GH_USER}/cka-practice/${BRANCH}|http://127.0.0.1:8123|' \
+            bootstrap.sh > /tmp/bootstrap-local.sh
+          HOME=/tmp/fakehome EXAM=none bash /tmp/bootstrap-local.sh
+          test -x /tmp/fakehome/cka-practice/cka.sh
+          test -x /tmp/fakehome/cka-practice/exams/exam11.sh
+          n=$(find /tmp/fakehome/cka-practice/exams -name 'exam*.sh' | wc -l)
+          echo "  installed $n exams"
+          [ "$n" = "$(grep -cE '^[0-9]+\|[a-z-]+\|exam' cka.sh)" ]
+          HOME=/tmp/fakehome /tmp/fakehome/cka-practice/cka.sh help >/dev/null
+          echo "  a fresh install runs"
+
   version:
     name: version consistency
     runs-on: ubuntu-latest
@@ -92,33 +250,35 @@ jobs:
       - name: VERSION, README badge, CHANGELOG and tags agree
         run: ./scripts/release.sh --check
 
-  bootstrap:
-    name: bootstrap installs a complete set
+  docs:
+    name: the docs are not lying
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: every file bootstrap.sh fetches exists in the repo
+      - name: every exam is documented, every relative link resolves
+        # The README used to list ten exams by hand. Adding one meant editing
+        # four places and remembering all four; twice, one was missed.
         run: |
-          # bootstrap.sh downloads a hard-coded list from raw.githubusercontent.
-          # A file renamed here and not there produces a 404 at install time on
-          # somebody else's machine, which is the worst place to find out.
-          # FILES spans four lines; collapse the newlines or the membership
-          # test below silently misses every entry that sits at a line edge.
-          list="$(sed -n '/^FILES="/,/"$/p' bootstrap.sh | sed 's/^FILES="//; s/"$//' | tr '\n' ' ')"
+          set -uo pipefail
           fail=0
-          for f in $list; do
-            [ -f "$f" ] || { echo "  bootstrap.sh fetches '$f', which is not in the repo"; fail=1; }
-          done
-          # And the reverse: an exam added here but not listed there would
-          # install as a task list with no seed behind it.
-          for f in $(git ls-files 'exam*.sh' 'setup*.sh'); do
-            case " $list " in *" $f "*) ;; *) echo "  '$f' is in the repo but bootstrap.sh does not fetch it"; fail=1 ;; esac
-          done
-          # Every exam in the dispatcher table must exist as a pair of files.
-          sed -n '/^EXAMS="/,/"$/p' cka.sh | grep -oE '^[0-9]+\|[a-z-]+\|[^|]+\|[^|]+' \
-            | while IFS='|' read -r n name exam setup; do
-                [ -f "$exam" ]  || { echo "  cka.sh lists $name -> $exam, which does not exist"; exit 1; }
-                [ -f "$setup" ] || { echo "  cka.sh lists $name -> $setup, which does not exist"; exit 1; }
-              done || fail=1
-          [ $fail = 0 ] && echo "  bootstrap.sh, cka.sh and the repo agree"
+
+          while IFS='|' read -r n name _ _ _ _ _; do
+            case "$n" in ''|*[!0-9]*) continue ;; esac
+            grep -q -- "$name" docs/exams.md \
+              || { echo "  x exam '$name' is not mentioned in docs/exams.md"; fail=1; }
+          done < <(sed -n '/^EXAMS="/,/"$/p' cka.sh | sed 's/^EXAMS="//; s/"$//')
+
+          # A relative markdown link that points at nothing. A dead link in
+          # the README is the first thing a reader hits.
+          while IFS= read -r f; do
+            while IFS= read -r target; do
+              case "$target" in http*|\#*|mailto:*) continue ;; esac
+              t="${target%%#*}"
+              [ -z "$t" ] && continue
+              d=$(dirname "$f")
+              [ -e "$d/$t" ] || { echo "  x $f links to '$t', which does not exist"; fail=1; }
+            done < <(grep -oE '\]\([^)]+\)' "$f" | sed 's/^](//; s/)$//')
+          done < <(git ls-files '*.md')
+
+          [ $fail = 0 ] && echo "  every exam is documented and every relative link resolves"
           exit $fail
