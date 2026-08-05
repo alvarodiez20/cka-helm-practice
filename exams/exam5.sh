@@ -154,8 +154,12 @@ Q[2]="The kubelet on '${NODE}' must also start automatically the next time the n
 boots. Right now it would not."
 PTS[2]=6
 SOL[2]="ssh ${NODE} systemctl enable kubelet
-# or, combining with a start:  systemctl enable --now kubelet"
-WALK[2]="1. 'active' and 'enabled' are different questions, and mixing them up is
+ssh ${NODE} systemctl is-enabled kubelet"
+WALK[2]="0. 'systemctl enable --now kubelet' enables AND starts in one go.
+   The solution separates them because task 1 has already started it, and
+   'enable' on its own is the half this task is actually about.
+
+1. 'active' and 'enabled' are different questions, and mixing them up is
    how a cluster comes back from a reboot with a missing node:
 
      active   is it running right now       systemctl is-active kubelet
@@ -521,10 +525,17 @@ The file must contain the words 'Insufficient cpu'."
 PTS[9]=6
 SOL[9]="kubectl -n node-lab describe pod -l app=greedy | grep -i insufficient \\
   > ${ANS}/q9.txt
-# or from the event stream:
-kubectl -n node-lab get events --field-selector reason=FailedScheduling \\
-  -o custom-columns=MSG:.message --no-headers | head -1 > ${ANS}/q9.txt"
-WALK[9]="1. Two places carry scheduling failures, and knowing both is the point:
+cat ${ANS}/q9.txt"
+WALK[9]="0. The event stream is the other way to get this:
+
+     kubectl -n node-lab get events --field-selector reason=FailedScheduling \\
+       -o custom-columns=MSG:.message --no-headers | head -1
+
+   Use one or the other, not both — they write the same answer file, and
+   events are garbage-collected after an hour, so the second can quietly
+   overwrite a good answer with an empty one.
+
+1. Two places carry scheduling failures, and knowing both is the point:
 
      kubectl -n node-lab describe pod -l app=greedy | tail -12
      kubectl -n node-lab get events --field-selector reason=FailedScheduling

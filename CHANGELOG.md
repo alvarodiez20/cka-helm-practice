@@ -9,6 +9,98 @@ Versioning applies to the exam suite itself — the tasks, the graders and the
 tooling. A MAJOR bump means existing answers or scripts may no longer behave the
 same way; MINOR means new tasks or commands were added; PATCH means fixes only.
 
+## [2.0.1] — 2026-08-05
+
+The first release cut after actually running the exams. `solve-and-grade.sh`
+landed in 2.0.0; pointing it at a real cluster immediately found two tasks that
+could not be solved, a grader that could not be satisfied, and a reset that
+carried a previous attempt's score over. Every one had shipped since 1.0.0 and
+every static check in the repo was green throughout — which is the argument for
+the script.
+
+Verified on a Killercoda CKA playground (Kubernetes v1.35.1, kustomize v5.7.1)
+and against a local `kube-apiserver`. Exam 1 went from **76/100 from its own
+solutions** to 0/100 seeded and **100/100 solved**; exam 11 the same.
+
+### Fixed
+
+- **Exam 1 task 11 could not be solved.** Task 9 asked for a chart with
+  appVersion `3.4.5`, and the chart `helm create` scaffolds uses
+  `.Chart.AppVersion` as the image tag whenever `image.tag` is empty — which
+  it is by default. So the chart linted clean, packaged clean, and deployed
+  `nginx:3.4.5`, a tag that does not exist. Task 11 then installs that chart
+  with `--wait`, which blocked for the full five-minute timeout and failed.
+  The task had been unsolvable since 1.0.0.
+
+  appVersion is now `1.27.5`, a real nginx release, and `explain 9` says why:
+  appVersion is not decorative, it is the image tag.
+
+- **Exam 1 task 2's solution re-broke the release it had just fixed.** `SOL[2]`
+  offered two alternatives — `helm rollback legacy 2` and, below it, a bare
+  `helm rollback legacy`. A reader picks one; anything running the block runs
+  both, and a bare rollback targets the *previous* revision, which after the
+  first rollback is the broken one.
+
+- **Exam 1 task 8's solution errored, and its grader was unsatisfiable.** The
+  bare `helm rollback ghost` answers `Error: release has no 0 version`, because
+  an uninstalled release kept with `--keep-history` has exactly one revision
+  and no previous one to roll back to — the revision has to be named. The
+  grader then required revision `>= 3` when rolling back the only revision
+  produces revision 2, so even the corrected command could not pass.
+
+- **`setup1.sh` and `setup8.sh` did not reset the candidate's own work.** Nine
+  of the eleven seeds already cleared their answer directory; these two left
+  `~/answers`, `~/mychart` and `~/dist` in place, so `reset` wiped the cluster
+  and 28 points of a previous attempt survived it.
+
+- **Six solutions across four exams were not runnable.** They contained either
+  an alternative (`# or: ...`), which a reader resolves and a machine does
+  not, or an interactive command (`kubectl edit`, `| less`) that waits for
+  input for ever. `scripts/check-tasks.sh` now fails the build on both, and
+  the alternatives have moved into the walkthroughs where prose can say "or".
+
+- **Exam 11 task 12 documented its three faults in the wrong order.** They
+  surface in the order kustomize works — unmarshal the file, check the kind,
+  resolve what it points at — so the `namePrefix` shape error hides both of
+  the others. The walkthrough claimed kind → path → shape; it is shape →
+  kind → path. It now says so, with the verbatim error for each.
+
+- **Exam 11 task 13's walkthrough said the prod overlay renders six
+  objects.** It renders five. The grader counts for itself, so this misled
+  the candidate rather than mis-scoring them.
+
+- **Exam 11 task 3's walkthrough understated `commonLabels`.** `apply -k` is
+  not a transaction: the Service is accepted and the Deployment is rejected
+  on its immutable selector, leaving you half-applied. The walkthrough now
+  says that, quotes the real error, and mentions the deprecation warning
+  kustomize v5 emits.
+
+### Added
+
+- **`demo/cka-practice-kustomize.gif`, and the README shows it again.** Its
+  terminal output is a real run of exam 11 — real `kubectl`, real kustomize,
+  the real grader, 0/100 seeded and 100/100 solved. The GIF that shipped
+  through 1.x was removed in 2.0.0 for typing commands that no longer existed;
+  this one is committed by name rather than hidden in `demo/out/`, so it is
+  obvious which file has gone stale when it does.
+
+- **`demo/cast-to-gif.py`.** `agg` needs a Rust toolchain, which is a lot to
+  ask of a cluster host you are about to throw away. This renders the same
+  thing from `pyte` and `pillow`, and `record-demo.sh` falls back to it when
+  `agg` is not on PATH.
+
+- **`scripts/check-tasks.sh` now rejects a solution that is a menu.** An
+  alternative inside a `SOL` block (`# or: ...`) is resolved by a reader and
+  run in full by a machine; an interactive command waits for input for ever.
+  Both shipped, and both are now build failures.
+
+### Changed
+
+- **The Gateway API's arrival date was wrong in two places.** `docs/exams.md`
+  and the 1.10.0 changelog entry said it entered the CKA curriculum "in 2026".
+  It arrived in the **18 February 2025** update, in place of Ingress, alongside
+  Helm, Kustomize and CRDs/Operators.
+
 ## [2.0.0] — 2026-08-04
 
 The repository is now **`cka-practice`**. It was `cka-helm-practice`, and three
@@ -62,10 +154,6 @@ and a CI pipeline that checks the things this project has actually broken.
   either `tests/solutions/N.sh` or each task's own `solve` output, and
   requires 100/100. `.github/workflows/e2e.yml` runs it weekly on `kind`.
 
-  Exam 11 was verified with it on a Killercoda playground (Kubernetes
-  v1.35.1, kustomize v5.7.1): 0/100 seeded, 100/100 solved. That run found
-  three bugs in the exam's own walkthroughs, fixed below.
-
 - **Three new CI jobs.** `cli` exercises `cka.sh`, `activate.sh` and every
   exam's `list`/`help`/`version` — nothing used to run the entry points at
   all. `install` runs `bootstrap.sh` for real against the checkout over local
@@ -116,24 +204,6 @@ and a CI pipeline that checks the things this project has actually broken.
 - **`demo/record-demo.sh` types the current interface**, and is selected by
   exam *name* (`DEMO=kustomize`) rather than number. The default script is now
   a tour of the five verbs, which does not go stale when the exam set changes.
-
-### Fixed
-
-- **Exam 11 task 12 documented its three faults in the wrong order.** They
-  surface in the order kustomize works — unmarshal the file, check the kind,
-  resolve what it points at — so the `namePrefix` shape error hides both of
-  the others. The walkthrough claimed kind → path → shape; it is shape →
-  kind → path. It now says so, with the verbatim error for each.
-
-- **Exam 11 task 13's walkthrough said the prod overlay renders six
-  objects.** It renders five. The grader counts for itself, so this misled
-  the candidate rather than mis-scoring them.
-
-- **Exam 11 task 3's walkthrough understated `commonLabels`.** `apply -k` is
-  not a transaction: the Service is accepted and the Deployment is rejected
-  on its immutable selector, leaving you half-applied. The walkthrough now
-  says that, quotes the real error, and mentions the deprecation warning
-  kustomize v5 emits.
 
 ### Removed
 
@@ -300,8 +370,9 @@ Ten exams, 130 tasks, 1000 points.
   selector says `app=order` against pods labelled `app=orders`, which nothing
   validates and nothing warns about.
 
-  *Gateway API (tasks 6–9).* The API entered the CKA curriculum in early 2026
-  and the reported questions are precisely these: create the GatewayClass and
+  *Gateway API (tasks 6–9).* The API entered the CKA curriculum in the
+  18 February 2025 update, in place of Ingress, and the reported questions are
+  precisely these: create the GatewayClass and
   Gateway, attach an HTTPRoute, split traffic, and work out why a route does
   nothing. Task 7 is built around the failure mode everyone hits — an HTTPRoute
   with no `parentRefs`, or a parent that does not exist, is a perfectly valid
@@ -957,6 +1028,7 @@ Initial version, unreleased.
 - A local chart repository served on `127.0.0.1:8879`, so the exam works with no
   internet access beyond the pod images.
 
+[2.0.1]: https://github.com/alvarodiez20/cka-practice/releases/tag/v2.0.1
 [2.0.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v2.0.0
 [1.11.1]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.11.1
 [1.11.0]: https://github.com/alvarodiez20/cka-practice/releases/tag/v1.11.0

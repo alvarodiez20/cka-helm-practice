@@ -79,8 +79,7 @@ Do not reinstall it and do not delete it."
 PTS[2]=8
 SOL[2]="helm history legacy -n apps          # find the last good revision (2)
 helm rollback legacy 2 -n apps
-# or, since it is the immediately previous one:
-helm rollback legacy -n apps"
+helm history legacy -n apps          # confirm: a NEW revision, 'Rollback to 2'"
 WALK[2]="1. See the damage first. Never roll back blind:
 
      helm list -n apps
@@ -267,8 +266,9 @@ impossible and costs you both sets of points. There is no undo."
 Q[8]="Recover the release 'ghost': it must be deployed again.
 Do it from its history, without reinstalling it from the repository."
 PTS[8]=8
-SOL[8]="helm list -n hidden-77 --uninstalled     # see the last revision
-helm rollback ghost -n hidden-77"
+SOL[8]="helm history ghost -n hidden-77             # one revision, 'uninstalled'
+helm rollback ghost 1 -n hidden-77          # name it explicitly
+helm list -n hidden-77                      # deployed again"
 WALK[8]="1. Find what is left to work with. An uninstalled-but-kept release is
    invisible to a plain 'helm list':
 
@@ -295,12 +295,12 @@ repo, and it starts the revision count over at 1 while the grader expects
 revision >= 3."
 
 Q[9]="Create a brand-new chart called 'mychart' in ${BASE}/mychart.
-The CHART version must be 1.2.0 and the APPLICATION version 3.4.5.
+The CHART version must be 1.2.0 and the APPLICATION version 1.27.5.
 The chart must pass 'helm lint' with no errors."
 PTS[9]=10
 SOL[9]="cd ${BASE} && helm create mychart
 sed -i 's/^version:.*/version: 1.2.0/' mychart/Chart.yaml
-sed -i 's/^appVersion:.*/appVersion: \"3.4.5\"/' mychart/Chart.yaml
+sed -i 's/^appVersion:.*/appVersion: \"1.27.5\"/' mychart/Chart.yaml
 helm lint ./mychart"
 WALK[9]="1. Scaffold the chart. 'helm create' writes a complete, working nginx-based
    chart, which is why this task is fast if you know the command:
@@ -312,16 +312,40 @@ WALK[9]="1. Scaffold the chart. 'helm create' writes a complete, working nginx-b
    deliberately gives them different values:
 
      version     the version of the CHART itself       -> 1.2.0
-     appVersion  the version of the APP inside it      -> 3.4.5
+     appVersion  the version of the APP inside it      -> 1.27.5
 
    Edit ${BASE}/mychart/Chart.yaml, either with vi or in place:
 
      sed -i 's/^version:.*/version: 1.2.0/' ${BASE}/mychart/Chart.yaml
-     sed -i 's/^appVersion:.*/appVersion: \"3.4.5\"/' ${BASE}/mychart/Chart.yaml
+     sed -i 's/^appVersion:.*/appVersion: \"1.27.5\"/' ${BASE}/mychart/Chart.yaml
 
    Keep appVersion quoted. It is a free-form string, and an unquoted value
-   like 3.4.5 is fine here but the quoted form is what 'helm create' itself
+   like 1.27.5 is fine here but the quoted form is what 'helm create' itself
    produces and it avoids surprises with values such as 1.25.
+
+   APPVERSION IS NOT DECORATIVE — IT IS THE IMAGE TAG.
+
+   This is the part worth carrying out of the task. The chart 'helm create'
+   scaffolds ships this in templates/deployment.yaml:
+
+     image: \"{{ .Values.image.repository }}:{{ .Values.image.tag |
+              default .Chart.AppVersion }}\"
+
+   and a values.yaml whose image.tag is the empty string. So with the default
+   values, the tag Helm deploys IS your appVersion. Set appVersion to
+   something that is not a real nginx tag and the chart lints clean, packages
+   clean, installs — and the pod sits in ImagePullBackOff for ever:
+
+     Failed to pull image \"nginx:3.4.5\": ... docker.io/library/nginx:3.4.5:
+     not found
+
+   That is why this task asks for 1.27.5 rather than an arbitrary number: it
+   is a real nginx release, so the chart you build here is one you can
+   actually install in task 11. If you ever need an appVersion that is not a
+   valid tag, pin the tag explicitly instead:
+
+     image:
+       tag: \"1.27-alpine\"
 
 3. Lint it, which the task requires explicitly:
 
@@ -388,6 +412,33 @@ WALK[11]="1. Helm installs from a local .tgz path exactly as it does from a repo
 
      helm list -n dev              # STATUS deployed, CHART mychart-1.2.0
      kubectl get pods -n dev       # Running
+
+WHAT --wait IS ACTUALLY FOR, AND WHAT IT COSTS YOU WHEN IT FAILS
+
+   Without --wait, 'helm install' returns the moment the API server has
+   accepted the objects. The release says 'deployed' whether or not a single
+   pod ever starts. With --wait, Helm blocks on readiness — which means a
+   chart that deploys a broken image now fails the INSTALL rather than
+   quietly succeeding:
+
+     helm list -n dev
+     # NAME   STATUS
+     # mine   pending-install       <- five minutes of this, then failed
+
+   If that happens, the release is not the problem. Look at the pod:
+
+     kubectl -n dev get pods
+     # mine-mychart-...  0/1  ImagePullBackOff
+     kubectl -n dev get events --sort-by=.lastTimestamp | tail
+
+   The usual cause with a 'helm create' chart is task 9's appVersion: the
+   default template uses it as the image tag, so an appVersion that is not a
+   real tag produces exactly this. See explain 9.
+
+   To recover, uninstall and re-install after fixing the chart — a failed
+   'pending-install' release will block a plain re-install:
+
+     helm uninstall mine -n dev
 
 Common traps: pointing at the chart DIRECTORY (${BASE}/mychart) instead of the
 packaged archive. The release deploys and looks healthy, but the task asked for
@@ -509,11 +560,15 @@ check(){
        && filehas "$ANS/q6.txt" "pullPolicy" \
        && filehas "$ANS/q6.txt" "service" ;;
     7) helm history ghost -n hidden-77 -o json 2>/dev/null | grep -q 'uninstalled' ;;
+    # >= 2, not >= 3: the seed installs 'ghost' once, so after task 7's
+    # uninstall --keep-history there is exactly one revision. Rolling it back
+    # produces revision 2 and there is no way to reach 3. This asked for 3 and
+    # was therefore unsatisfiable — found by scripts/solve-and-grade.sh.
     8) [ "$(hfield ghost hidden-77 status)" = "deployed" ] \
-       && [ "$(hnum ghost hidden-77 revision)" -ge 3 ] ;;
+       && [ "$(hnum ghost hidden-77 revision)" -ge 2 ] ;;
     9) [ -f "$BASE/mychart/Chart.yaml" ] \
        && grep -Eq '^version:[[:space:]]*1\.2\.0[[:space:]]*$' "$BASE/mychart/Chart.yaml" \
-       && grep -Eq '^appVersion:[[:space:]]*"?3\.4\.5"?[[:space:]]*$' "$BASE/mychart/Chart.yaml" \
+       && grep -Eq '^appVersion:[[:space:]]*"?1\.27\.5"?[[:space:]]*$' "$BASE/mychart/Chart.yaml" \
        && helm lint "$BASE/mychart" >/dev/null 2>&1 ;;
     10) ls "$BASE"/dist/mychart-1.2.0.tgz >/dev/null 2>&1 ;;
     11) nsexists dev \

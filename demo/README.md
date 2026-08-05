@@ -40,6 +40,37 @@ anywhere:
 ./demo/record-demo.sh --render-only  # on your laptop, needs agg
 ```
 
+## If you cannot install agg
+
+`agg` needs a Rust toolchain, which is a lot to ask of a cluster host you are
+about to throw away. `demo/cast-to-gif.py` renders the same thing with two pip
+packages:
+
+```bash
+pip install pyte pillow
+python3 demo/cast-to-gif.py demo/out/foo.cast demo/out/foo.gif [font_size] [fps]
+```
+
+It replays the cast through a terminal emulator and writes one GIF frame per
+*distinct* screen, with each frame's duration taken from the cast's own
+timings. That is the same trick `agg` uses, and it is why the size advice below
+holds for both: a long pause is one cheap frame, and fast scrolling is many
+expensive ones. `record-demo.sh` falls back to it automatically when `agg` is
+not on PATH.
+
+## The committed asset
+
+`demo/cka-practice-kustomize.{cast,gif}` is what the README shows. Its terminal
+output is a real run of exam 11 — real `kubectl`, real kustomize, the real
+grader, a real 0/100-then-100/100 — captured against a live API server. The
+typing and the pauses are scripted, exactly as `record-demo.sh` scripts them,
+so the recording is reproducible rather than a function of how fast anyone
+types.
+
+**Re-record it when the verbs change.** That is the failure this file exists to
+prevent: the GIF that shipped through 1.x still typed `exam3` and `q3 2` months
+after `cka use`, `q` and `grade` replaced them.
+
 ## Recording on Killercoda
 
 The [CKA playground](https://killercoda.com/playgrounds/scenario/cka) needs a

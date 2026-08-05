@@ -102,9 +102,12 @@ Just the number."
 PTS[2]=7
 SOL[2]="etcdutl snapshot status ${SNAP} --write-out=json | \\
   python3 -c 'import json,sys; print(json.load(sys.stdin)[\"revision\"])' > ${ANS}/q2.txt
-# or read it from the table:
-etcdutl snapshot status ${SNAP} --write-out=table"
-WALK[2]="1. 'snapshot status' reads the file itself — it does not talk to a running
+cat ${ANS}/q2.txt"
+WALK[2]="0. 'etcdutl snapshot status ${SNAP} --write-out=table' prints the same
+   four fields in a form you can read at a glance. The solution parses the
+   JSON instead because the answer has to land in a file.
+
+1. 'snapshot status' reads the file itself — it does not talk to a running
    etcd, so it needs no certificates and works on a copied snapshot anywhere:
 
      etcdutl snapshot status ${SNAP} --write-out=table
@@ -209,9 +212,12 @@ appears in its static pod manifest.
 Just the path."
 PTS[4]=7
 SOL[4]="grep -oP '(?<=--data-dir=)\\S+' ${MANIFESTS}/etcd.yaml > ${ANS}/q4.txt
-# or simply:
-grep data-dir ${MANIFESTS}/etcd.yaml"
-WALK[4]="1. The control plane's real configuration is in four files, and reading them
+cat ${ANS}/q4.txt"
+WALK[4]="0. 'grep data-dir ${MANIFESTS}/etcd.yaml' is enough to SEE the value.
+   The solution uses -oP to extract just the path, because the answer file
+   must contain the path and nothing else.
+
+1. The control plane's real configuration is in four files, and reading them
    is a skill in itself:
 
      ls /etc/kubernetes/manifests/

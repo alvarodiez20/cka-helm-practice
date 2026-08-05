@@ -189,7 +189,15 @@ ok "release 'legacy' seeded in namespace apps (3 revisions, the last one broken)
 helm install ghost "$REPO_NAME/demo-app" --version 0.1.0 -n hidden-77 >/dev/null 2>&1
 ok "release 'ghost' seeded in a namespace you will have to find"
 
+# Reset the candidate's own work, not just the cluster. Nine of the eleven
+# seeds already did this; exam 1 did not, so 'reset' left ~/answers, ~/mychart
+# and ~/dist behind and tasks 3, 5, 6, 9, 10 and 13 stayed green against a
+# freshly wiped cluster — 28 points of a previous attempt surviving a reset.
+# Found by scripts/solve-and-grade.sh, whose pre-check requires a seeded exam
+# to score 0.
+rm -rf "$BASE/answers" "$BASE/mychart" "$BASE/dist"
 mkdir -p "$BASE/answers"
+ok "answers, mychart and dist cleared"
 echo
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd -- "$HERE/.." && pwd)"

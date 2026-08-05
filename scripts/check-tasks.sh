@@ -131,6 +131,63 @@ sys.exit(1 if problems else 0)
 PY
 [ $? -eq 0 ] || FAIL=1
 
+# ── static: is every SOL a runnable, non-interactive sequence? ──
+# 'solve N' promises "the commands, and nothing else", and
+# scripts/solve-and-grade.sh pipes exactly that to bash. Two shapes break that
+# promise, and both shipped:
+#
+#   an ALTERNATIVE inside the block ("# or: ...") — a reader picks one, a
+#   machine runs both. exam1's SOL[2] rolled a release back to the good
+#   revision and then, on the next line, rolled it forward into the broken one
+#   again, because a bare 'helm rollback' means "the previous revision" and the
+#   previous revision had just changed. It cost that task 8 points on every
+#   automated run and would mislead anyone pasting the block.
+#
+#   an INTERACTIVE command — 'kubectl edit' opens an editor and waits for ever.
+#
+# Alternatives belong in WALK, where prose can say "or".
+printf "%s  Solutions are runnable, not menus%s\n\n" "$BO" "$N"
+python3 - <<'SOLCHECK'
+import re, sys, glob
+
+def _natural(p):
+    m = re.search(r"exam(\d+)\.sh$", p)
+    return (int(m.group(1)) if m else 0, p)
+
+TTY = sys.stdout.isatty()
+RED = "\033[31m" if TTY else ""
+GRN = "\033[32m" if TTY else ""
+OFF = "\033[0m"  if TTY else ""
+
+ALT = re.compile(r'^#\s*(or\b|or,|alternatively|either\b)', re.I)
+INTERACTIVE = re.compile(r'(?<![-\w])(kubectl\s+edit|crontab\s+-e|vim?|nano|less|more)(?![-\w])')
+
+problems = 0
+for path in sorted(glob.glob("exams/exam*.sh"), key=_natural):
+    src = open(path, encoding="utf-8").read()
+    for m in re.finditer(r'^SOL\[(\d+)\]="(.*?)"\n', src, re.S | re.M):
+        n, body = m.group(1), m.group(2)
+        for line in body.splitlines():
+            l = line.strip()
+            if ALT.match(l):
+                problems += 1
+                print("    %sx%s %-17s SOL[%s] offers an alternative; a machine runs both"
+                      % (RED, OFF, path, n))
+                print("       %s" % l[:74])
+                print("       move it into WALK[%s], where prose can say 'or'" % n)
+            elif not l.startswith("#") and INTERACTIVE.search(l):
+                problems += 1
+                print("    %sx%s %-17s SOL[%s] runs an interactive command"
+                      % (RED, OFF, path, n))
+                print("       %s" % l[:74])
+
+if problems == 0:
+    print("    %s\u2714%s none" % (GRN, OFF))
+sys.exit(1 if problems else 0)
+SOLCHECK
+[ $? -eq 0 ] || FAIL=1
+
+
 printf "\n"
 if [ "$FAIL" = "0" ]; then
   printf "  %severy task renders cleanly%s\n\n" "$G$BO" "$N"; exit 0

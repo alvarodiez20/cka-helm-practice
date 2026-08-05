@@ -78,30 +78,33 @@ mkdir -p "$OUT"
 demo_script(){
   case "$DEMO" in
     # ── one exam, in depth: the Kustomize traps ─────────────
+    # Deliberately no 'explain' here. A walkthrough is 80+ lines, which in a
+    # 30-row frame is three screens of scroll in one blink — unreadable, and
+    # expensive, because GIF size tracks distinct frames rather than duration.
+    # The two greps below make the same point in two lines: the render has the
+    # new tag, the base still has the old one.
     kustomize)
       cat <<'SCRIPT'
-# Kustomize on the CKA, graded against a live cluster.
+# Eleven mock CKA exams for the CKA, graded against a real cluster.
 @1
+cka
+@4
 cka use kustomize
-@3
+@4
 # Task 4: change the image without touching the manifest.
 q 4
 @4
-# The transformer matches the IMAGE name, not the container name.
-grep -A2 'image:' ~/exam11/base/deployment.yaml
-@3
-kubectl kustomize ~/exam11/base | grep 'image:'
-@3
-kubectl apply -k ~/exam11/base
+# The kustomization sets the tag ...
+kubectl kustomize ~/exam11/base | grep image:
 @2
-# The grader reads the cluster AND checks the base was left alone.
+# ... and the base manifest still says what it always said.
+grep -n image: ~/exam11/base/deployment.yaml
+@3
+# The grader checks both: the cluster, and that the base is untouched.
 grade 4
 @3
-# Task 3 is the one that bites on a real cluster.
-explain 3
-@7
 grade
-@4
+@5
 SCRIPT
       ;;
 
@@ -263,8 +266,16 @@ if command -v agg >/dev/null; then
       "$CAST" "$OUT/${NAME}.gif" >/dev/null 2>&1 \
     && ok "GIF  $OUT/${NAME}.gif  ($(du -h "$OUT/${NAME}.gif" | cut -f1))" \
     || warn "agg failed"
+elif python3 -c 'import pyte, PIL' >/dev/null 2>&1; then
+  # agg wants a Rust toolchain. cast-to-gif.py wants two pip packages and
+  # produces the same thing, so a host without cargo is not a dead end.
+  ok "agg not found — falling back to demo/cast-to-gif.py"
+  python3 "$HERE/cast-to-gif.py" "$CAST" "$OUT/${NAME}.gif" 15 10 \
+    || warn "cast-to-gif.py failed"
 else
-  warn "agg not found — no GIF.  cargo install --git https://github.com/asciinema/agg"
+  warn "no GIF renderer. Either:"
+  warn "  cargo install --git https://github.com/asciinema/agg"
+  warn "  pip install pyte pillow      # then demo/cast-to-gif.py"
 fi
 
 if command -v svg-term >/dev/null; then

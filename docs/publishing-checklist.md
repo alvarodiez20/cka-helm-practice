@@ -32,13 +32,29 @@ and repaired. That run found three real bugs, all now fixed:
   immutable selector, and you are left half-applied. Plus kustomize now emits
   a deprecation warning that the walkthrough did not mention.
 
-**The other ten still need a pass under 2.0.0.** Their task content is
+**Exam 1 is done too**, and it was worse than exam 11: three bugs made two
+tasks unsolvable and one grader unsatisfiable, all shipping since 1.0.0. Task
+11 waited five minutes on an image that could not exist, because task 9 set an
+appVersion that `helm create` turns into the image tag. Task 2's own solution
+rolled the release back and then forward into the break again. Task 8's
+solution errored outright and its grader wanted a revision number nothing
+could reach. A first run scored **76/100 from its own solutions**; after the
+fixes it is 0/100 seeded and **100/100 solved**, in 25 seconds rather than
+five minutes.
+
+That run also caught two systemic problems: `setup1.sh` and `setup8.sh` never
+reset the candidate's answer directory, so a re-seed carried 28 points over
+from the previous attempt; and six solutions across four exams were menus
+rather than scripts. Both are fixed, and `check-tasks.sh` now guards the
+second.
+
+**The other nine still need a pass under 2.0.0.** Their task content is
 unchanged from 1.11.1, so the risk is the refactor rather than the exams —
 but "the risk is low" is not the same as "it was run":
 
 ```bash
 curl -sL .../bootstrap.sh | EXAM=none bash
-cd ~/cka-practice && ./scripts/solve-and-grade.sh 1 2 4 7 9
+cd ~/cka-practice && ./scripts/solve-and-grade.sh 2 4 7 9
 ./scripts/solve-and-grade.sh --list     # what can run unattended, and why not
 ```
 
@@ -64,17 +80,24 @@ URL everywhere in the post.
   materially less engagement, and this is a two-minute fix — a screenshot of
   `cka` with a couple of exams graded green would do.
 
-### 3. Record the demo
+### 3. Record the demo — **done**
 
-There is no demo asset in the repo any more — the committed GIF showed
-`exam3` and `q3 2`, commands that stopped being documented several releases
-ago. [demo/README.md](../demo/README.md) has the recipe; `./demo/record-demo.sh`
-now types the current interface.
+`demo/cka-practice-kustomize.gif` is in the README and ready to attach to the
+post: 924×624, 51s, 1.2 MB, comfortably inside LinkedIn's autoplay limit. Its
+terminal output is a real run of exam 11 — real `kubectl`, real kustomize, the
+real grader, 0/100 seeded and 100/100 solved.
 
-Record `DEMO=tour`, attach the GIF to the LinkedIn post, and either attach it
-to the GitHub release or commit it once you are happy with it. A GIF of a
-grader turning green is the single highest-value asset for this post, and the
-post is much weaker without one.
+It ends on thirteen green ✔ and `SCORE: 100/100 PASS`, which is the frame the
+post is really for.
+
+Two follow-ups if you want them:
+
+- **A `DEMO=tour` recording as well.** The committed one is exam-specific; the
+  tour shows the five verbs and survives the exam set changing under it. Useful
+  as a second asset — a reply, a carousel slide.
+- **Re-record when the verbs change.** That is the failure this whole file
+  exists to prevent: the 1.x GIF still typed `exam3` and `q3 2` months after
+  those stopped being the documented commands.
 
 ### 4. Push a tag and confirm the release publishes
 

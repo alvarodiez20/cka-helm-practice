@@ -518,8 +518,12 @@ PTS[8]=8
 SOL[8]="# The source selector says app=clientt — one letter too many.
 kubectl -n frontend patch netpol allow-client-to-web --type=json \\
   -p='[{\"op\":\"replace\",\"path\":\"/spec/ingress/0/from/0/podSelector/matchLabels/app\",\"value\":\"client\"}]'
-# or: kubectl -n frontend edit netpol allow-client-to-web"
-WALK[8]="1. Read what the policy actually says, not what it was meant to say:
+kubectl -n frontend get netpol allow-client-to-web -o jsonpath='{.spec.ingress[0].from[0].podSelector}{\"\\n\"}'"
+WALK[8]="0. 'kubectl edit netpol allow-client-to-web -n frontend' does this by hand
+   and is the faster answer under exam pressure. The patch below is here
+   instead because it is reproducible and can be pasted.
+
+1. Read what the policy actually says, not what it was meant to say:
 
      kubectl -n frontend get netpol allow-client-to-web -o yaml
 
@@ -799,7 +803,7 @@ Write into ${ANS}/q13.txt the names of every NetworkPolicy in that
 namespace that applies to the INGRESS of pod 'db' — one name per line, and
 nothing else."
 PTS[13]=8
-SOL[13]="kubectl -n backend get netpol -o yaml | less   # read every podSelector
+SOL[13]="kubectl -n backend get netpol -o yaml | grep -A4 podSelector   # every selector
 kubectl -n backend get pod db --show-labels     # app=db,tier=backend
 # A policy applies to db's ingress if its podSelector matches those labels
 # AND its policyTypes include Ingress.
@@ -808,7 +812,11 @@ allow-api-to-db
 db-tier-lock
 default-deny-ingress
 EOF"
-WALK[13]="1. 'Which policies apply to this pod?' has no kubectl flag. You work it out
+WALK[13]="0. Reading a wall of policy YAML is easier in a pager:
+   'kubectl -n backend get netpol -o yaml | less'. The solution greps
+   instead only because it has to run unattended.
+
+1. 'Which policies apply to this pod?' has no kubectl flag. You work it out
    from two things: the pod's labels, and each policy's podSelector.
 
      kubectl -n backend get pod db --show-labels

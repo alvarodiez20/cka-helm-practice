@@ -7,12 +7,11 @@ dist/
 cka-helm/
 cka-helm2/
 
-# Recordings. These are BUILD OUTPUT — 'demo/record-demo.sh' regenerates them
-# from the script it carries, and a committed GIF goes stale silently: the one
-# that shipped through 1.x still showed 'exam3' and 'q3 2' long after those
-# stopped being the documented commands, which is a worse README than no demo
-# at all. If you want one in the README, record it and attach it to the
-# release rather than committing the binary.
+# demo/out/ is scratch: whatever you happen to be recording. The one asset the
+# README actually shows is committed at demo/*.gif, deliberately and by name,
+# so it is obvious when it goes stale — the GIF that shipped through 1.x still
+# showed 'exam3' and 'q3 2' long after those stopped being the documented
+# commands, because nobody could see which file the README was pointing at.
 demo/out/
 
 # Local editor/agent settings, not project config.

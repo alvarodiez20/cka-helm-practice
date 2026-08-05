@@ -1,14 +1,61 @@
 # LinkedIn post — draft
 
-Two options. Both written in the repo's voice: concrete, no hype, no emoji.
+Three options. All written in the repo's voice: concrete, no hype, no emoji.
 Pick one, don't merge them.
 
-Attach the GIF from `demo/out/` as the post image. It autoplays in-feed and
-loops, which is why the GIF matters more than the wording here.
+Attach `demo/cka-practice-kustomize.gif` as the post image. It autoplays
+in-feed and loops, which is why the GIF matters more than the wording here.
 
 ---
 
-## Option A — lead with the trap (recommended)
+## Option A — passed the exam, built the tool (recommended)
+
+> I have recently passed the CKA.
+>
+> The February 2025 curriculum update added Helm, Kustomize and the Gateway
+> API, and while I was revising I kept running into the same problem: plenty of
+> practice material on the older topics, very little on the parts that had
+> changed.
+>
+> So I built my own, and made it grade itself. Eleven mock exams that check the
+> cluster's actual state rather than comparing you against an answer key, so
+> there is no way through it by guessing.
+>
+> 66 to pass, same as the real exam. Every task explains the trap it is built
+> around.
+>
+> One line on a Killercoda playground:
+>
+> `curl -sL https://raw.githubusercontent.com/alvarodiez20/cka-practice/main/bootstrap.sh | bash`
+>
+> I hope someone finds it useful for passing the exam.
+>
+> github.com/alvarodiez20/cka-practice
+>
+> #kubernetes #cka #devops
+
+About 115 words. It opens with a result, names the gap it was built to fill,
+and stops. The GIF carries the rest — there is no point describing in prose
+what the reader is already watching.
+
+**The curriculum claim is checked.** The CKA changed on **18 February 2025**,
+and the update added Helm, Kustomize, the Gateway API in place of Ingress, and
+CRDs/Operators, while condensing the domains. That is the one line a commenter
+will fact-check, and it holds:
+
+- [Linux Foundation — CKA program changes](https://training.linuxfoundation.org/certified-kubernetes-administrator-cka-program-changes/)
+- [Linux Foundation Forums — the 18 Feb 2025 changes](https://forum.linuxfoundation.org/discussion/868578/about-the-changes-release-on-the-18th-of-feb-2025-for-cka-certification)
+- [devoriales — CKA exam updates for 2025](https://devoriales.com/post/377/certified-kubernetes-administrator-cka-exam-updates-for-2025)
+
+If someone asks in the comments what was hard, the honest answer is the
+graders, not the tasks: six of them were handing out points against a cluster
+that did not exist, which is why there is now a test that runs every grader
+with `kubectl` uninstalled and requires all eleven to score exactly 0. That is
+a better second comment than it is a first paragraph.
+
+---
+
+## Option B — lead with the trap
 
 > Install Argo CD with Helm, without installing its CRDs.
 >
@@ -47,7 +94,7 @@ loops, which is why the GIF matters more than the wording here.
 
 ---
 
-## Option B — lead with the tool
+## Option C — lead with the tool
 
 > I kept failing Helm questions in CKA practice for a reason I did not expect:
 > I could recite the commands and still not verify my own work.
@@ -82,8 +129,8 @@ loops, which is why the GIF matters more than the wording here.
 
 **Attach the GIF, not a link to it.** LinkedIn autoplays and loops GIFs under
 about 8 MB in-feed. Above that it silently converts the post to a still frame,
-which is worse than no image. Check the size before posting:
-`du -h demo/out/*.gif`.
+which is worse than no image. `demo/cka-practice-kustomize.gif` is 1.2 MB, so
+it is fine — but check after any re-record: `du -h demo/*.gif`.
 
 **Put the repo link in the post body, not the first comment.** The
 link-in-comments trick is folklore; a plain link with a real preview does fine
@@ -94,10 +141,10 @@ and the post reads as less engineered.
 
 **Timing:** Tuesday to Thursday morning, in your audience's timezone.
 
-**Option A does better** because it teaches something in the first three lines,
-before asking for anything. The repo becomes the answer to a question the
-reader now has. Option B leads with "I built a thing", which needs the reader
-to already care.
+**Ordering.** A works because it opens with a result and then teaches. B works
+if you would rather not lead with the certification — it teaches in the first
+three lines and the repo becomes the answer to a question the reader now has.
+C leads with "I built a thing", which needs the reader to already care.
 
 **If someone corrects the `--skip-crds` point in the comments,** they will
 probably say it works for their chart — and they will be right, for a chart

@@ -378,7 +378,8 @@ them. Chasing a missing address is the trap, not the task.
 twice, once each way, so the mapping is unavoidable: `ingressClassName` becomes
 `parentRefs`, `pathType: Prefix` becomes `type: PathPrefix`, and the thing
 Ingress could never express — a weighted split, a cross-namespace backend — is a
-first-class field. The Gateway API entered the CKA curriculum in 2026 and the
+first-class field. The Gateway API entered the CKA curriculum in the
+18 February 2025 update, in place of Ingress, and the
 questions reported so far are precisely this: attach a route, split traffic,
 work out why a route does nothing.
 

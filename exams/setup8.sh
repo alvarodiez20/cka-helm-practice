@@ -81,6 +81,9 @@ command -v kubectl >/dev/null || die "no kubectl found"
 kubectl get nodes >/dev/null 2>&1 || die "kubectl cannot reach any cluster"
 ok "cluster reachable"
 
+# Same reset bug as exam 1 had: without this, a re-seed leaves the previous
+# attempt's answer files in place and their tasks stay green.
+rm -rf "$ANS" "$EX8"
 mkdir -p "$ANS" "$EX8"
 
 # ── What the tasks need, checked up front ───────────────────

@@ -23,6 +23,15 @@ source ~/cka-practice/activate.sh
 Run that on a [Killercoda CKA playground](https://killercoda.com/playgrounds/scenario/cka)
 and you have eleven graded exams a minute later.
 
+<div align="center">
+
+<!-- Rendered from demo/cka-practice-kustomize.cast with demo/cast-to-gif.py.
+     The terminal output is a real run of exam 11 against a live API server;
+     re-record with demo/record-demo.sh whenever the verbs change. -->
+![The Kustomize exam: change an image from the kustomization, and the grader checks both the cluster and that the base manifest was left alone](demo/cka-practice-kustomize.gif)
+
+</div>
+
 ---
 
 ## The idea
