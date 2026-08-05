@@ -19,3 +19,7 @@ demo/out/
 
 # FUSE leftovers from editing files that were open elsewhere.
 .fuse_hidden*
+
+# sed -i.bak leftovers. This mount does not allow unlinking, so they are
+# ignored rather than removed.
+*.bak

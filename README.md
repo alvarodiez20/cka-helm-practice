@@ -6,7 +6,7 @@
 The grader inspects the cluster, not your answers.**
 
 [![CI](https://github.com/alvarodiez20/cka-practice/actions/workflows/ci.yml/badge.svg)](https://github.com/alvarodiez20/cka-practice/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Exams](https://img.shields.io/badge/exams-11-orange?style=flat-square)](docs/exams.md)
 [![Tasks](https://img.shields.io/badge/tasks-143-orange?style=flat-square)](docs/exams.md)
@@ -72,7 +72,7 @@ explain 4              # why that did not work
 <summary><b>What <code>cka</code> prints</b></summary>
 
 ```
-  cka-practice v2.0.0 — 11 exams, 100 points each, pass mark 66
+  cka-practice v2.0.1 — 11 exams, 100 points each, pass mark 66
   grouped by CKA domain, heaviest first
 
   30%  Troubleshooting
